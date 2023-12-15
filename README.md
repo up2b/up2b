@@ -1,4 +1,4 @@
-![Code](https://s2.loli.net/2023/12/15/ClyB1w7RNnP4EF8.png)
+![logo](https://s2.loli.net/2023/12/15/5ipRMmXTxb3JkqV.png)
 
 # UP2B
 
@@ -14,13 +14,12 @@
 
 ### 0 下面是与 PicGo 的体积对比
 
-基于 0.2.0beta 版。
-
-|             | PicGo | UP2B |
-| ----------- | ----- | ---- |
-| Windows x64 |       |      |
-| macOS arm64 |       |      |
-| Linux x64   |       |      |
+|                    | PicGo(2.3.1) | UP2B(0.2.0beta) |
+| ------------------ | ------------ | --------------- |
+| Windows x64 exe    | 60.6MB       | 3.84MB          |
+| Windows x64 msi    | 不支持       | 4.66MB          |
+| macOS arm64        | 88.2MB       | 5.4MB           |
+| Linux x64 AppImage | 101MB        |                 |
 
 ### 1 图片上传
 
@@ -29,6 +28,16 @@
 ### 2 图片列表及删除图片
 
 ![截屏2023-12-15 22.28.44](https://s2.loli.net/2023/12/15/pvlGhXcr6dZHntR.png)
+
+### 3 设置
+
+![截屏2023-12-15 22.47.26](https://s2.loli.net/2023/12/15/esQrwN8KhnomBTx.png)
+
+### 4 自动压缩（体验）
+
+本程序的特色功能，可以将超过图床体积限制的图片压缩后上传，但此功能尚不稳定，还需改进，而且此功能会导致程序体积增加，考虑到不是所有用户都有此需求，故而我会为增加此功能的程序单独打包一个版本。
+
+![截屏2023-12-15 22.55.49](https://s2.loli.net/2023/12/15/5xbHVlOpwMmtrXe.png)
 
 ## CLI
 
