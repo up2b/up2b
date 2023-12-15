@@ -16,10 +16,11 @@
 
 |                    | PicGo(2.3.1) | UP2B(0.2.0beta) |
 | ------------------ | ------------ | --------------- |
-| Windows x64 exe    | 60.6MB       | 3.84MB          |
-| Windows x64 msi    | 不支持       | 4.66MB          |
-| macOS arm64        | 88.2MB       | 5.4MB           |
-| Linux x64 AppImage | 101MB        |                 |
+| Windows x64 exe    | 60.6 MB      | 3.84 MB         |
+| Windows x64 msi    | 不支持       | 4.66 MB         |
+| macOS arm64        | 88.2 MB      | 5.4 MB          |
+| Linux x64 AppImage | 101 MB       | 73.8 MB         |
+| Linux x64 deb      | 不支持       | 7.3 MB          |
 
 ### 1 图片上传
 
