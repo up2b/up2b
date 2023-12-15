@@ -52,4 +52,4 @@ jobs:
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
           prerelease: false
-          args: ${{matrix.platform == 'macos-latest' && '-t aarch64-apple-darwin' || matrix.platform == 'windows-latest' && '-t x86_64-pc-windows-msvc'}}
+          args: ${{matrix.platform == 'macos-latest' && '-t aarch64-apple-darwin' || matrix.platform == 'windows-latest' && '-t x86_64-pc-windows-msvc' || '-t x86_64-unknown-linux-gnu'}}
