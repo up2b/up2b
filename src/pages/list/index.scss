@@ -1,0 +1,38 @@
+.ant-tabs-tabpane-active {
+  display: flex;
+
+  .ant-spin-nested-loading {
+    // position: absolute;
+    height: 100%;
+    flex: 1;
+    display: flex;
+
+    & > div {
+      display: flex;
+    }
+
+    .ant-spin {
+      position: static;
+    }
+  }
+}
+
+#image-list {
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+
+  .css-var-r1 {
+    --ant-padding-lg: 0;
+  }
+
+  .image-list-item {
+    object-fit: contain;
+  }
+
+  .image-card-container {
+    position: relative;
+    width: 152px;
+    height: 182px;
+  }
+}

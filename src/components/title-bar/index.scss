@@ -1,0 +1,38 @@
+#title-bar {
+  --height: 28px;
+  height: var(--height);
+  position: fixed;
+  width: 100%;
+  z-index: 100;
+  text-align: center;
+  line-height: var(--height);
+  user-select: none;
+
+  #buttons {
+    position: fixed;
+    top: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+
+    .button {
+      height: var(--height);
+      width: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #dbdbdb;
+      }
+    }
+
+    .close {
+      &:hover {
+        color: #fff;
+        background-color: #dc1616;
+      }
+    }
+  }
+}

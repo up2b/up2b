@@ -1,0 +1,40 @@
+.tabs {
+  height: 100vh;
+
+  .ant-tabs-nav {
+    width: 70px;
+  }
+
+  .ant-tabs-nav-list {
+    justify-content: space-evenly;
+
+    .ant-tabs-tab {
+      max-height: 120px;
+      height: 100%;
+      justify-content: center;
+    }
+  }
+
+  .ant-tabs-content-holder {
+    padding: 20px 0 10px 0;
+    position: relative;
+
+    .ant-tabs-content {
+      display: flex;
+      height: 100%;
+      width: 100%;
+      padding: 10px;
+
+      .ant-tabs-tabpane-active {
+        padding: 0;
+        width: 100%;
+        position: relative;
+      }
+
+      #rc-tabs-1-panel-upload {
+        padding: 20px;
+        flex: 1;
+      }
+    }
+  }
+}

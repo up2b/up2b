@@ -1,0 +1,89 @@
+.upload {
+  --base-color: #999;
+  height: 100%;
+  border: var(--ant-line-width) dashed var(--ant-color-border);
+  border-radius: 10px;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #1677ff;
+  }
+
+  &-icon {
+    font-size: 67px;
+    color: var(--base-color);
+    margin-bottom: 16px;
+    line-height: 50px;
+    display: block;
+  }
+
+  &-text,
+  &-allowed-formats {
+    color: var(--base-color);
+    text-align: center;
+  }
+
+  &-text {
+    font-size: 14px;
+    margin: 0;
+  }
+
+  &-allowed-formats {
+    margin: 0;
+    font-size: 12px;
+  }
+
+  &-add {
+    width: 150px;
+    height: 180px;
+    border: 1px dashed var(--base-color);
+    border-radius: 10px;
+    font-size: 60px;
+    color: var(--base-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--ant-color-fill-alter);
+
+    &:hover {
+      border-color: #1677ff;
+    }
+  }
+
+  &-status {
+    width: 152px;
+    height: 182px;
+
+    &-progress {
+      width: 100%;
+      height: 100%;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  &-error {
+    width: 150px;
+    height: 180px;
+    border: var(--ant-line-width) var(--ant-line-type)
+      var(--ant-color-error-border);
+    border-radius: 10px;
+    background-color: var(--ant-color-error-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+
+    .error-icon {
+      color: var(--ant-color-error);
+      font-size: 60px;
+    }
+  }
+}

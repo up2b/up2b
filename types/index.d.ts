@@ -1,0 +1,1 @@
+type TabKey = 'upload' | 'list' | 'settings'

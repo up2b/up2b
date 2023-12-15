@@ -1,0 +1,75 @@
+{
+  "build": {
+    "beforeDevCommand": "pnpm dev:vite",
+    "beforeBuildCommand": "pnpm build:vite",
+    "devPath": "http://localhost:1420",
+    "withGlobalTauri": false
+  },
+  "package": {
+    "productName": "up2b",
+    "version": "../package.json"
+  },
+  "tauri": {
+    "cli": {
+      "description": "图床管理客户端",
+      "longDescription": "一个可以管理多个图床的本地客户端，支持命令行调用和图形化配置。",
+      "beforeHelp": "",
+      "afterHelp": "",
+      "args": [],
+      "subcommands": {
+        "upload": {
+          "description": "上传一张或多张图片",
+          "args": [
+            {
+              "name": "images",
+              "description": "图片路径",
+              "index": 1,
+              "minValues": 1,
+              "takesValue": true,
+              "multiple": true,
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "open": true
+      },
+      "window": {
+        "all": false,
+        "close": true,
+        "hide": true,
+        "show": true,
+        "maximize": true,
+        "minimize": true,
+        "unmaximize": true,
+        "unminimize": true,
+        "setTitle": true,
+        "startDragging": true
+      },
+      "clipboard": {
+        "all": false,
+        "writeText": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "com.thep0y.up2b",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ]
+    },
+    "security": {
+      "csp": null
+    }
+  }
+}
