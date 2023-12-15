@@ -8,6 +8,8 @@
 
 此程序基于 [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) 开发，适配多平台（Windows、macOS 和 Linux桌面发行版）。
 
+图片的管理和配置完全图形化，上传在支持图形化的同时还支持 CLI 。
+
 与 PicGo 不同的是，由于核心业务逻辑是用 Rust 实现，暂时无法实现 API 插件功能，只能逐个适配。
 
 写此程序的初衷就是觉得作为一个图床管理器，PicGo 的体积太大了，当然，这也是 Electron 程序的通病。
