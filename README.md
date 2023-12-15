@@ -1,16 +1,60 @@
-# Tauri + Vue 3 + TypeScript
+![Code](https://s2.loli.net/2023/12/15/ClyB1w7RNnP4EF8.png)
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+# UP2B
 
-## Recommended IDE Setup
+图床管理器。
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## 介绍
 
-## Type Support For `.vue` Imports in TS
+此程序基于 [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) 开发，适配多平台（Windows、macOS 和 Linux桌面发行版）。
 
-Since TypeScript cannot handle type information for `.vue` imports, they are shimmed to be a generic Vue component type by default. In most cases this is fine if you don't really care about component prop types outside of templates. However, if you wish to get actual prop types in `.vue` imports (for example to get props validation when using manual `h(...)` calls), you can enable Volar's Take Over mode by following these steps:
+与 PicGo 不同的是，由于核心业务逻辑是用 Rust 实现，暂时无法实现 API 插件功能，只能逐个适配。
 
-1. Run `Extensions: Show Built-in Extensions` from VS Code's command palette, look for `TypeScript and JavaScript Language Features`, then right click and select `Disable (Workspace)`. By default, Take Over mode will enable itself if the default TypeScript extension is disabled.
-2. Reload the VS Code window by running `Developer: Reload Window` from the command palette.
+写此程序的初衷就是觉得作为一个图床管理器，PicGo 的体积太大了，当然，这也是 Electron 程序的通病。
 
-You can learn more about Take Over mode [here](https://github.com/johnsoncodehk/volar/discussions/471).
+### 0 下面是与 PicGo 的体积对比
+
+基于 0.2.0beta 版。
+
+|             | PicGo | UP2B |
+| ----------- | ----- | ---- |
+| Windows x64 |       |      |
+| macOS arm64 |       |      |
+| Linux x64   |       |      |
+
+### 1 图片上传
+
+![截屏2023-12-15 22.19.46](https://s2.loli.net/2023/12/15/42YRjUmPckleJx9.png)
+
+### 2 图片列表及删除图片
+
+![截屏2023-12-15 22.28.44](https://s2.loli.net/2023/12/15/pvlGhXcr6dZHntR.png)
+
+## CLI
+
+与 PicGo 类似，UP2B 也提供了一个上传图片的 CLI 命令，下面是帮助信息：
+
+```
+up2b 0.2.0
+thepoy
+图床管理客户端
+
+USAGE:
+    up2b [SUBCOMMAND]
+
+OPTIONS:
+    -h, --help       Print help information
+    -V, --version    Print version information
+
+SUBCOMMANDS:
+    help      Print this message or the help of the given subcommand(s)
+    upload    上传一张或多张图片
+```
+
+只有一条有效命令`up2b`。
+
+你可以通过此命令在任何支持图片上传的文本编辑器中上传图片到图床，比如在 Typora 中如此设置：
+
+![截屏2023-12-15 22.25.54](https://s2.loli.net/2023/12/15/i7gSByjX4FtmKxv.png)
+
+就可以直接上传图片了。
