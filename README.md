@@ -1,4 +1,4 @@
-![logo](https://s2.loli.net/2023/12/15/5ipRMmXTxb3JkqV.png)
+![logo](docs/images/logo.png)
 
 # UP2B
 
@@ -26,11 +26,11 @@
 
 ### 1 图片上传
 
-![截屏2023-12-15 22.19.46](https://s2.loli.net/2023/12/15/42YRjUmPckleJx9.png)
+![上传](docs/images/upload.avif)
 
 ### 2 图片列表及删除图片
 
-![截屏2023-12-15 22.28.44](https://s2.loli.net/2023/12/15/pvlGhXcr6dZHntR.png)
+![截屏2023-12-15 22.28.44](docs/images/list.avif)
 
 ### 3 设置
 
