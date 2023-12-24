@@ -2,15 +2,16 @@ use std::{path::Path, str::FromStr};
 
 use reqwest::{
     header::{HeaderMap, HeaderName, ACCEPT},
-    Method, Response,
+    Response, StatusCode,
 };
-use serde_json::Value;
+use serde_json::{Map, Value};
 use tauri::Window;
 
 use crate::{error::HeaderError, http::multipart::FileKind, Error, Result};
 
 use super::{AllowedImageFormat, BaseManager, CompressedFormat, ImageItem, UploadResult};
 
+/// 认证方式仅适用于 json 请求
 pub enum AuthMethod {
     /// 通过请求头认证，key 为 None 时默认使用 Authorization
     Header {
@@ -36,19 +37,19 @@ pub struct UploadResponseController {
     image_url_key: String,
     /// 有的图床不提供缩略图
     thumb_key: Option<String>,
-    deleted_id: String,
+    deleted_id_key: String,
 }
 
 impl UploadResponseController {
     pub fn new<S: Into<String>, O: Into<Option<String>>>(
         image_url_key: S,
         thumb_key: O,
-        deleted_id: S,
+        deleted_id_key: S,
     ) -> Self {
         Self {
             image_url_key: image_url_key.into(),
             thumb_key: thumb_key.into(),
-            deleted_id: deleted_id.into(),
+            deleted_id_key: deleted_id_key.into(),
         }
     }
 
@@ -59,7 +60,7 @@ impl UploadResponseController {
             None => return Err(crate::Error::Other("没有图片链接".to_owned())),
             Some(v) => v.as_str().unwrap().to_owned(),
         };
-        let deleted_id = match json.get(&self.deleted_id) {
+        let deleted_id = match json.get(&self.deleted_id_key) {
             None => return Err(crate::Error::Other("没有删除 id".to_owned())),
             Some(v) => v.as_str().unwrap().to_owned(),
         };
@@ -115,13 +116,151 @@ impl Upload {
     }
 }
 
+struct List {
+    url: String,
+    controller: ListResponseController,
+}
+
+pub struct ListResponseController {
+    items_key: String,
+    image_url_key: String,
+    thumb_key: Option<String>,
+    deleted_id_key: String,
+}
+
+impl ListResponseController {
+    async fn parse(&self, response: Response) -> Result<Vec<ImageItem>> {
+        let json: Value = response.json().await?;
+
+        let items = match json.get(&self.items_key) {
+            None => return Err(Error::Other("通过 items_key 无法获取列表".to_owned())),
+            Some(v) => v.as_array().unwrap(),
+        };
+
+        let mut images = Vec::with_capacity(items.len());
+
+        for item in items.iter() {
+            let url = match item.get(&self.image_url_key) {
+                None => return Err(Error::Other("没有图片链接".to_owned())),
+                Some(v) => v.as_str().unwrap().to_owned(),
+            };
+            let deleted_id = match item.get(&self.deleted_id_key) {
+                None => return Err(Error::Other("没有删除 id".to_owned())),
+                Some(v) => v.as_str().unwrap().to_owned(),
+            };
+
+            let image_item = match &self.thumb_key {
+                None => ImageItem {
+                    url,
+                    deleted_id,
+                    thumb: None,
+                },
+                Some(k) => {
+                    let thumb = match json.get(k) {
+                        None => None,
+                        Some(v) => Some(v.as_str().unwrap().to_owned()),
+                    };
+
+                    ImageItem {
+                        url,
+                        deleted_id,
+                        thumb,
+                    }
+                }
+            };
+
+            images.push(image_item);
+        }
+
+        Ok(images)
+    }
+}
+
+enum DeleteGetKind {
+    Path,
+    Query { key: String },
+}
+
+enum DeleteMethod {
+    Get {
+        kind: DeleteGetKind,
+    },
+    Post {
+        body: Map<String, Value>,
+        key: String,
+    },
+}
+
+enum DeleteResponseController {
+    /// status-code = 200 才成功，错误时返回 unkown
+    Status,
+    Json {
+        /// 成功与否的 key
+        key: String,
+        /// 成功的值应是多少
+        should_be: Value,
+        /// 失败时的消息 key，为 None 时如果出错则返回 unkown
+        message_key: Option<String>,
+    },
+}
+
+impl DeleteResponseController {
+    async fn parse(&self, response: Response) -> Result<()> {
+        match self {
+            DeleteResponseController::Status => {
+                if response.status() != StatusCode::OK {
+                    return Err(Error::Other("unkown".to_owned()));
+                }
+            }
+            DeleteResponseController::Json {
+                key,
+                should_be,
+                message_key,
+            } => {
+                let json: Value = response.json().await?;
+
+                match json.get(&key) {
+                    None => return Err(Error::Other("无法获取删除状态值".to_owned())),
+                    Some(v) => {
+                        if v != should_be {
+                            match message_key {
+                                None => return Err(Error::Other("unkown".to_owned())),
+                                Some(k) => match json.get(k) {
+                                    None => return Err(Error::Other("unkown".to_owned())),
+                                    Some(msg) => {
+                                        return Err(Error::Other(msg.as_str().unwrap().to_owned()))
+                                    }
+                                },
+                            }
+                        }
+                    }
+                };
+            }
+        };
+
+        Ok(())
+    }
+}
+
+struct Delete {
+    url: String,
+    method: DeleteMethod,
+    controller: DeleteResponseController,
+}
+
 pub struct Api {
     upload: Upload,
+    list: List,
+    delete: Delete,
 }
 
 impl Api {
-    pub fn new(upload: Upload) -> Self {
-        Self { upload }
+    pub fn new(upload: Upload, list: List, delete: Delete) -> Self {
+        Self {
+            upload,
+            list,
+            delete,
+        }
     }
 }
 
@@ -164,6 +303,16 @@ impl BaseApiManager {
         }
 
         Ok(headers)
+    }
+
+    async fn list(&self) -> Result<Vec<ImageItem>> {
+        let response = self.inner.get(&self.api.list.url, self.headers()?).await?;
+
+        self.api.list.controller.parse(response).await
+    }
+
+    async fn delete(&self, id: &str) -> Result<()> {
+        Ok(())
     }
 
     async fn upload(
