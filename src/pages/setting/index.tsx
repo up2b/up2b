@@ -144,18 +144,18 @@ const Setting = ({ config, setConfig }: SettingProps) => {
             <Input.Password
               placeholder="输入 token"
               value={config?.auth_config?.[apiKey]?.token || ''}
-              onChange={(e) =>
+              onChange={(e) => {
                 setConfig((pre) => ({
                   ...pre!,
-                  config: {
+                  auth_config: {
                     ...config?.auth_config,
-                    [config!.using as APIManagerKey]: {
+                    [apiKey]: {
                       type: 'API',
                       token: e.target.value,
                     },
                   },
                 }))
-              }
+              }}
             />
           </Form.Item>
         )
@@ -212,6 +212,8 @@ const Setting = ({ config, setConfig }: SettingProps) => {
         )
     }
   }
+
+  console.log(config)
 
   return (
     <div id="setting">
