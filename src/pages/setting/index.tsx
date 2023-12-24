@@ -42,7 +42,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
 
   const [version, setVersion] = useState<string | null>(null)
 
-  const [index, setIndex] = useState<string | null>(null)
+  const [index, setIndex] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     !config &&
@@ -60,7 +60,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
 
   useEffect(() => {
     if (!imageBeds.length) return
-    setIndex(filterImageBed()!.index)
+    config?.using && setIndex(filterImageBed()?.index)
   }, [imageBeds, config?.using])
 
   useEffect(() => {
@@ -95,6 +95,16 @@ const Setting = ({ config, setConfig }: SettingProps) => {
   const onUpdateConfig = async () => {
     if (!config) return
 
+    // 删除非 USING 图床 keys 数量等于 1 的配置
+    for (const k in config.auth_config) {
+      if (
+        k !== config.using &&
+        Object.keys(config.auth_config[k as ManagerCode]!).length === 1
+      ) {
+        delete config.auth_config[k as ManagerCode]
+      }
+    }
+
     if (config.auth_config[config.using]?.type === 'CHEVERETO') {
       let extra: Extra | null = null
 
@@ -113,8 +123,6 @@ const Setting = ({ config, setConfig }: SettingProps) => {
       if (extra)
         (config.auth_config[config.using] as CheveretoAuthConfig).extra = extra
     }
-
-    console.log(config)
 
     try {
       await updateConfig(config)
@@ -254,16 +262,16 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                     pre
                       ? { ...pre, using: v }
                       : {
-                          using: v,
-                          use_proxy: false,
-                          automatic_compression: false,
-                          auth_config: {
-                            [v]: {
-                              type: imageBeds.find((item) => item.key === v)
-                                ?.type,
-                            },
+                        using: v,
+                        use_proxy: false,
+                        automatic_compression: false,
+                        auth_config: {
+                          [v]: {
+                            type: imageBeds.find((item) => item.key === v)
+                              ?.type,
                           },
                         },
+                      },
                   )
                 }
               >
@@ -303,17 +311,17 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                 disabled={
                   (filterImageBed()?.type === 'API'
                     ? !(config?.auth_config?.[config.using] as ApiAuthConfig)
-                        ?.token
+                      ?.token
                     : !(
-                        config?.auth_config?.[
-                          config.using
-                        ] as CheveretoAuthConfig
-                      )?.username ||
-                      !(
-                        config?.auth_config?.[
-                          config.using
-                        ] as CheveretoAuthConfig
-                      )?.password) || areObjectsEqual(defaultConfig, config)
+                      config?.auth_config?.[
+                      config.using
+                      ] as CheveretoAuthConfig
+                    )?.username ||
+                    !(
+                      config?.auth_config?.[
+                      config.using
+                      ] as CheveretoAuthConfig
+                    )?.password) || areObjectsEqual(defaultConfig, config)
                 }
               >
                 {verifying ? '验证中...' : '保存'}

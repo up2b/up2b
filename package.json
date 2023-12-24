@@ -15,29 +15,29 @@
   "type": "module",
   "dependencies": {
     "@ant-design/icons": "^5.2.6",
-    "@tauri-apps/api": "^1.5.2",
-    "antd": "^5.12.2",
+    "@tauri-apps/api": "^1.5.3",
+    "antd": "^5.12.5",
     "cross-env": "^7.0.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^1.5.8",
-    "@types/node": "^20.10.4",
+    "@tauri-apps/cli": "^1.5.9",
+    "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
-    "@types/react-dom": "^18.2.17",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
     "@vitejs/plugin-react": "^4.2.1",
-    "eslint": "^8.55.0",
-    "eslint-config-standard-with-typescript": "^42.0.0",
-    "eslint-plugin-n": "^16.4.0",
+    "eslint": "^8.56.0",
+    "eslint-config-standard-with-typescript": "^43.0.0",
+    "eslint-plugin-n": "^16.5.0",
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-react": "^7.33.2",
     "sass": "^1.69.5",
     "stylelint": "^16.0.2",
     "stylelint-scss": "^6.0.0",
     "typescript": "^5.3.3",
-    "vite": "^5.0.8"
+    "vite": "^5.0.10"
   }
 }
