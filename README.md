@@ -1,4 +1,4 @@
-![logo](https://s2.loli.net/2023/12/15/5ipRMmXTxb3JkqV.png)
+![logo](docs/images/logo.png)
 
 # UP2B
 
@@ -8,6 +8,8 @@
 
 此程序基于 [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) 开发，适配多平台（Windows、macOS 和 Linux桌面发行版）。
 
+图片的管理和配置完全图形化，上传在支持图形化的同时还支持 CLI 。
+
 与 PicGo 不同的是，由于核心业务逻辑是用 Rust 实现，暂时无法实现 API 插件功能，只能逐个适配。
 
 写此程序的初衷就是觉得作为一个图床管理器，PicGo 的体积太大了，当然，这也是 Electron 程序的通病。
@@ -16,18 +18,19 @@
 
 |                    | PicGo(2.3.1) | UP2B(0.2.0beta) |
 | ------------------ | ------------ | --------------- |
-| Windows x64 exe    | 60.6MB       | 3.84MB          |
-| Windows x64 msi    | 不支持       | 4.66MB          |
-| macOS arm64        | 88.2MB       | 5.4MB           |
-| Linux x64 AppImage | 101MB        |                 |
+| Windows x64 exe    | 60.6 MB      | 3.84 MB         |
+| Windows x64 msi    | 不支持       | 4.66 MB         |
+| macOS arm64        | 88.2 MB      | 5.4 MB          |
+| Linux x64 AppImage | 101 MB       | 73.8 MB         |
+| Linux x64 deb      | 不支持       | 7.3 MB          |
 
 ### 1 图片上传
 
-![截屏2023-12-15 22.19.46](https://s2.loli.net/2023/12/15/42YRjUmPckleJx9.png)
+![上传](docs/images/upload.avif)
 
 ### 2 图片列表及删除图片
 
-![截屏2023-12-15 22.28.44](https://s2.loli.net/2023/12/15/pvlGhXcr6dZHntR.png)
+![截屏2023-12-15 22.28.44](docs/images/list.avif)
 
 ### 3 设置
 
@@ -60,7 +63,7 @@ SUBCOMMANDS:
     upload    上传一张或多张图片
 ```
 
-只有一条有效命令`up2b`。
+只有一条有效命令`upload`。
 
 你可以通过此命令在任何支持图片上传的文本编辑器中上传图片到图床，比如在 Typora 中如此设置：
 
