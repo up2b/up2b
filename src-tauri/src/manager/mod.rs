@@ -1,17 +1,23 @@
+pub mod api;
 pub mod chevereto;
 pub mod smms;
 
 use async_trait::async_trait;
+use base64::{engine::general_purpose, Engine as _};
 use reqwest::{header::HeaderMap, Client, Method, RequestBuilder, Response};
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display, path::Path};
 use tauri::Window;
-use tokio::fs::File;
+use tokio::fs::{read, File};
 
 use crate::{
     config::ManagerAuthConfigKind,
     error::{ConfigError, Error},
-    http::multipart::{upload, FileKind, UploadFile},
+    http::{
+        json,
+        multipart::{upload, FileKind, UploadFile},
+    },
     util::image::guess_mime_type_by_ext,
     Result,
 };
@@ -244,6 +250,94 @@ impl BaseManager {
         Ok(file)
     }
 
+    async fn upload_json(
+        &self,
+        window: Option<Window>,
+        id: u32,
+        url: &str,
+        header: HeaderMap,
+        key: &str,
+        image_path: &Path,
+        form: Option<&[(&str, &str)]>,
+    ) -> Result<Response> {
+        let file_data = read(image_path).await?;
+        let file_data = general_purpose::STANDARD.encode(file_data);
+
+        let mut body = serde_json::json!(form);
+
+        match body {
+            serde_json::Value::Null => {
+                let mut map = Map::new();
+                map.insert(key.to_owned(), Value::String(file_data));
+
+                body = Value::Object(map);
+            }
+            serde_json::Value::Object(mut map) => {
+                map.insert(key.to_owned(), Value::String(file_data));
+
+                body = Value::Object(map);
+            }
+            _ => return Err(Error::Other("错误的类型".to_owned())),
+        };
+
+        let builder = self.request(Method::POST, url, header);
+
+        let resp = json::upload(builder, window.as_ref(), body, id, 5).await?;
+
+        Ok(resp)
+    }
+
+    async fn upload_multipart(
+        &self,
+        window: Option<Window>,
+        id: u32,
+        url: &str,
+        header: HeaderMap,
+        image_path: &Path,
+        file_part_name: &str,
+        file_kind: &FileKind,
+        form: Option<&[(&str, &str)]>,
+    ) -> Result<Response> {
+        let file = File::open(&image_path).await?;
+        let filename = image_path.file_name().unwrap().to_str().unwrap();
+
+        let file = self
+            .compress(
+                #[cfg(feature = "compress")]
+                window.as_ref(),
+                file,
+                image_path,
+                #[cfg(feature = "compress")]
+                filename,
+            )
+            .await?;
+
+        let mime_type = guess_mime_type_by_ext(image_path.extension().unwrap().to_str().unwrap());
+
+        debug!("guess mime type: {}", mime_type);
+
+        let response = upload(
+            &self.client,
+            window.as_ref(),
+            url,
+            header,
+            id,
+            file_part_name,
+            filename,
+            UploadFile::new(file, file_kind),
+            &mime_type,
+            form,
+            60,
+        )
+        .await
+        .map_err(|e| {
+            error!("上传图片出错：{}", e);
+            e
+        })?;
+
+        Ok(response)
+    }
+
     async fn upload(
         &self,
         window: Option<Window>,
@@ -272,6 +366,7 @@ impl BaseManager {
         debug!("guess mime type: {}", mime_type);
 
         let response = upload(
+            &self.client,
             window.as_ref(),
             url,
             header,
