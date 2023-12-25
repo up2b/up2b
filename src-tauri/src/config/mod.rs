@@ -6,6 +6,8 @@ use std::path::PathBuf;
 use tokio::sync::RwLock;
 
 use crate::error::Result;
+use crate::manager::api::Api;
+use crate::manager::smms::SMMS_API;
 use crate::ManagerCode;
 
 lazy_static! {
@@ -40,6 +42,7 @@ pub enum ProxyKind {
 pub enum ManagerAuthConfigKind {
     API {
         token: String,
+        api: Api,
     },
     Git {
         token: String,
@@ -166,7 +169,17 @@ fn read_config() -> Result<Option<Config>> {
 
     let config_str = fs::read_to_string(CONFIG_FILE.to_owned())?;
 
-    Ok(toml::from_str(&config_str)?)
+    let mut config: Config = toml::from_str(&config_str)?;
+
+    config.auth_config.insert(
+        ManagerCode::Smms,
+        ManagerAuthConfigKind::API {
+            token: "".to_owned(),
+            api: SMMS_API.clone(),
+        },
+    );
+
+    Ok(Some(config))
 }
 
 pub fn write_config(config: &Config) -> Result<()> {

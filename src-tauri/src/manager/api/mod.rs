@@ -4,13 +4,18 @@ use reqwest::{
     header::{HeaderMap, HeaderName, ACCEPT},
     Method, Response, StatusCode,
 };
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tauri::Window;
 
 use crate::{error::HeaderError, http::multipart::FileKind, Error, Result};
 
-use super::{AllowedImageFormat, BaseManager, CompressedFormat, ImageItem, UploadResult};
+#[cfg(feature = "compress")]
+use super::CompressedFormat;
+use super::{AllowedImageFormat, BaseManager, ImageItem, UploadResult};
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "UPPERCASE")]
 /// 认证方式仅适用于 json 请求
 pub enum AuthMethod {
     /// 通过请求头认证，key 为 None 时默认使用 Authorization
@@ -23,6 +28,8 @@ pub enum AuthMethod {
     },
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "UPPERCASE")]
 pub enum UploadContentType {
     Json {
         key: String,
@@ -33,6 +40,7 @@ pub enum UploadContentType {
     },
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UploadResponseController {
     image_url_key: String,
     /// 有的图床不提供缩略图
@@ -87,46 +95,67 @@ impl UploadResponseController {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Upload {
     url: String,
     max_size: u64,
     allowed_formats: Vec<AllowedImageFormat>,
+    #[cfg(feature = "compress")]
     compressed_format: CompressedFormat,
     content_type: UploadContentType,
     controller: UploadResponseController,
+    timeout: u64,
 }
 
 impl Upload {
-    pub fn new(
+    pub fn new<T: Into<Option<u64>>>(
         url: &str,
         max_size: u64,
         allowed_formats: Vec<AllowedImageFormat>,
-        compressed_format: CompressedFormat,
+        #[cfg(feature = "compress")] compressed_format: CompressedFormat,
         content_type: UploadContentType,
         controller: UploadResponseController,
+        timeout: T,
     ) -> Self {
+        let secs: Option<u64> = timeout.into();
         Self {
             url: url.into(),
             max_size,
             allowed_formats,
+            #[cfg(feature = "compress")]
             compressed_format,
             content_type,
             controller,
+            timeout: secs.unwrap_or(5),
         }
     }
 }
 
-enum ListRequestMethod {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "UPPERCASE")]
+pub enum ListRequestMethod {
     Get,
     Post { body: Map<String, Value> },
 }
 
-struct List {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct List {
     url: String,
     controller: ListResponseController,
     method: ListRequestMethod,
 }
 
+impl List {
+    pub fn new(url: &str, controller: ListResponseController, method: ListRequestMethod) -> Self {
+        Self {
+            url: url.to_owned(),
+            controller,
+            method,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ListResponseController {
     items_key: String,
     image_url_key: String,
@@ -135,6 +164,20 @@ pub struct ListResponseController {
 }
 
 impl ListResponseController {
+    pub fn new<S: Into<String>, O: Into<Option<String>>>(
+        items_key: S,
+        image_url_key: S,
+        deleted_id_key: S,
+        thumb_key: O,
+    ) -> Self {
+        Self {
+            items_key: items_key.into(),
+            image_url_key: image_url_key.into(),
+            deleted_id_key: deleted_id_key.into(),
+            thumb_key: thumb_key.into(),
+        }
+    }
+
     async fn parse(&self, response: Response) -> Result<Vec<ImageItem>> {
         let json: Value = response.json().await?;
 
@@ -182,12 +225,16 @@ impl ListResponseController {
     }
 }
 
-enum DeleteGetKind {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "UPPERCASE")]
+pub enum DeleteGetKind {
     Path,
     Query { key: String },
 }
 
-enum DeleteMethod {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "UPPERCASE")]
+pub enum DeleteMethod {
     Get {
         kind: DeleteGetKind,
     },
@@ -197,7 +244,9 @@ enum DeleteMethod {
     },
 }
 
-enum DeleteResponseController {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "UPPERCASE")]
+pub enum DeleteResponseController {
     /// status-code = 200 才成功，错误时返回 unkown
     Status,
     Json {
@@ -248,12 +297,24 @@ impl DeleteResponseController {
     }
 }
 
-struct Delete {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Delete {
     url: String,
     method: DeleteMethod,
     controller: DeleteResponseController,
 }
 
+impl Delete {
+    pub fn new(url: &str, method: DeleteMethod, controller: DeleteResponseController) -> Self {
+        Self {
+            url: url.to_owned(),
+            method,
+            controller,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Api {
     upload: Upload,
     list: List,
@@ -270,7 +331,8 @@ impl Api {
     }
 }
 
-struct BaseApiManager {
+#[derive(Debug)]
+pub struct BaseApiManager {
     inner: BaseManager,
     auth_method: AuthMethod,
     token: String,
@@ -278,7 +340,7 @@ struct BaseApiManager {
 }
 
 impl BaseApiManager {
-    fn new<S: Into<String>>(
+    pub fn new<S: Into<String>>(
         inner: BaseManager,
         auth_method: AuthMethod,
         token: S,
@@ -290,6 +352,10 @@ impl BaseApiManager {
             api,
             token: token.into(),
         }
+    }
+
+    pub fn allowed_formats(&self) -> Vec<AllowedImageFormat> {
+        self.api.upload.allowed_formats.clone()
     }
 
     fn headers(&self) -> Result<HeaderMap> {
@@ -311,7 +377,7 @@ impl BaseApiManager {
         Ok(headers)
     }
 
-    async fn list(&self) -> Result<Vec<ImageItem>> {
+    pub async fn list(&self) -> Result<Vec<ImageItem>> {
         let response = match &self.api.list.method {
             ListRequestMethod::Get => self.inner.get(&self.api.list.url, self.headers()?).await?,
             ListRequestMethod::Post { body } => {
@@ -362,7 +428,7 @@ impl BaseApiManager {
             .await
     }
 
-    async fn delete(&self, id: &str) -> Result<()> {
+    pub async fn delete(&self, id: &str) -> Result<()> {
         let resp = match &self.api.delete.method {
             DeleteMethod::Get { kind } => self.delete_by_get(kind, id).await?,
             DeleteMethod::Post { body, key } => self.delete_by_post(body, key, id).await?,
@@ -371,7 +437,7 @@ impl BaseApiManager {
         self.api.delete.controller.parse(resp).await
     }
 
-    async fn upload(
+    pub async fn upload(
         &self,
         window: Option<Window>,
         id: u32,
@@ -391,6 +457,7 @@ impl BaseApiManager {
                         key,
                         image_path,
                         form,
+                        self.api.upload.timeout,
                     )
                     .await?
             }
@@ -408,6 +475,7 @@ impl BaseApiManager {
                         &file_part_name,
                         file_kind,
                         form,
+                        self.api.upload.timeout,
                     )
                     .await?
             }

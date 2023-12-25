@@ -1,19 +1,67 @@
 use std::path::Path;
 
 use async_trait::async_trait;
-use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tauri::Window;
 
+use crate::http::multipart::FileKind;
+use crate::Result;
+
+use super::api::{
+    Api, AuthMethod, BaseApiManager, Delete, DeleteGetKind, DeleteMethod, List, ListRequestMethod,
+    ListResponseController, Upload, UploadResponseController,
+};
 #[cfg(feature = "compress")]
 use super::CompressedFormat;
-use crate::http::multipart::FileKind;
-use crate::{error::Error, Result};
-
 use super::{
     AllowedImageFormat, BaseManager, DeleteError, DeleteResponse, Extra, ImageItem, Manage,
     UploadResult,
 };
+
+lazy_static! {
+    pub static ref SMMS_API: Api = {
+        let upload = Upload::new(
+            "https://smms.app/api/v2/upload",
+            5 * 1024 * 1024,
+            vec![
+                AllowedImageFormat::Jpeg,
+                AllowedImageFormat::Png,
+                AllowedImageFormat::Gif,
+                AllowedImageFormat::Bmp,
+                AllowedImageFormat::Webp,
+            ],
+            #[cfg(feature = "compress")]
+            CompressedFormat::WEBP,
+            super::api::UploadContentType::Multipart {
+                file_part_name: "smfile".to_owned(),
+                file_kind: FileKind::Stream,
+            },
+            UploadResponseController::new("message.url", None, "message.hash"),
+            5,
+        );
+
+        let list = List::new(
+            "https://smms.app/api/v2/upload_history",
+            ListResponseController::new("data", "url", "hash", None),
+            ListRequestMethod::Get,
+        );
+
+        let delete = Delete::new(
+            "https://smms.app/api/v2/delete/",
+            DeleteMethod::Get {
+                kind: DeleteGetKind::Path,
+            },
+            super::api::DeleteResponseController::Json {
+                key: "success".to_owned(),
+                should_be: Value::Bool(true),
+                message_key: Some("message".to_owned()),
+            },
+        );
+
+        Api::new(upload, list, delete)
+    };
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 struct HistoryDataItem {
@@ -74,7 +122,7 @@ struct SmUploadResponse {
 
 #[derive(Debug)]
 pub struct SmMs {
-    inner: BaseManager,
+    inner: BaseApiManager,
     token: String,
 }
 
@@ -96,80 +144,24 @@ impl SmMs {
             #[cfg(feature = "compress")]
             CompressedFormat::WEBP,
         );
-        SmMs {
-            inner: manager,
-            token,
-        }
-    }
 
-    fn url(&self, path: &str) -> String {
-        self.inner.base_url.to_owned() + path
-    }
-
-    fn header(&self) -> HeaderMap {
-        let mut header = HeaderMap::new();
-        header.insert("Authorization", self.token.parse().unwrap());
-
-        header
-    }
-
-    async fn upload_history(&self) -> Result<HistoryResponse> {
-        trace!("getting upload history");
-
-        let url = self.url("upload_history");
-
-        let response = self.inner.get(&url, self.header()).await?.json().await?;
-
-        info!("got upload history response: {:?}", response);
-
-        Ok(response)
-    }
-
-    async fn delete_image_by_url(&self, hash: &str) -> Result<SmDeleteResponse> {
-        trace!("deleting an image");
-
-        let url = self.url(&("delete/".to_owned() + hash));
-
-        let response = self.inner.get(&url, self.header()).await?.json().await?;
-
-        info!("successfully deleted the image: hash={}", hash);
-
-        Ok(response)
-    }
-
-    async fn upload(
-        &self,
-        window: Option<Window>,
-        id: u32,
-        image_path: &Path,
-    ) -> Result<SmUploadResponse> {
-        trace!("uploading an image");
-
-        let url = self.url("upload");
-
-        let response = self
-            .inner
-            .upload(window, id, &url, self.header(), image_path, None)
-            .await?;
-
-        match response.json::<SmUploadResponse>().await {
-            Ok(r) => {
-                info!("successfully uploaded the image: {:?}", image_path);
-
-                Ok(r)
-            }
-            Err(e) => {
-                error!("反序例化时出错：{}", e);
-                Err(Error::Reqeust(e))
-            }
-        }
+        let inner = BaseApiManager::new(
+            manager,
+            AuthMethod::Header {
+                key: None,
+                prefix: None,
+            },
+            token.clone(),
+            SMMS_API.clone(),
+        );
+        SmMs { inner, token }
     }
 }
 
 #[async_trait]
 impl Manage for SmMs {
     fn allowed_formats(&self) -> Vec<AllowedImageFormat> {
-        self.inner.allowed_formats.clone()
+        self.inner.allowed_formats()
     }
 
     fn support_stream(&self) -> bool {
@@ -182,30 +174,20 @@ impl Manage for SmMs {
     }
 
     async fn get_all_images(&self) -> Result<Vec<ImageItem>> {
-        let response = self.upload_history().await?;
-
-        Ok(response
-            .data
-            .iter()
-            .map(|item| ImageItem {
-                url: item.url.clone(),
-                deleted_id: item.hash.clone(),
-                thumb: None,
-            })
-            .collect())
+        self.inner.list().await
     }
 
     async fn delete_image(&self, id: &str) -> Result<DeleteResponse> {
-        let response = self.delete_image_by_url(id).await?;
-
-        Ok(DeleteResponse {
-            success: response.success,
-            error: if response.success {
-                None
-            } else {
-                Some(DeleteError::Other(response.message))
-            },
-        })
+        match self.inner.delete(id).await {
+            Ok(()) => Ok(DeleteResponse {
+                success: true,
+                error: None,
+            }),
+            Err(e) => Ok(DeleteResponse {
+                success: false,
+                error: Some(DeleteError::Other(e.to_string())),
+            }),
+        }
     }
 
     async fn upload_image(
@@ -214,7 +196,7 @@ impl Manage for SmMs {
         id: u32,
         image_path: &Path,
     ) -> UploadResult {
-        let resp = match self.upload(window, id, image_path).await {
+        match self.inner.upload(window, id, image_path, None).await {
             Ok(r) => r,
             Err(e) => {
                 return UploadResult::Error {
@@ -222,20 +204,6 @@ impl Manage for SmMs {
                     detail: e,
                 }
             }
-        };
-
-        match resp.data {
-            None => {
-                return UploadResult::Error {
-                    detail: Error::Other(resp.message),
-                    code: resp.code,
-                };
-            }
-            Some(data) => UploadResult::Response(ImageItem {
-                url: data.url,
-                deleted_id: data.hash,
-                thumb: None,
-            }),
         }
     }
 }

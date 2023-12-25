@@ -86,7 +86,7 @@ pub trait Manage: Sync + Send {
     ) -> UploadResult;
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum AllowedImageFormat {
     Jpeg,
@@ -98,7 +98,7 @@ pub enum AllowedImageFormat {
 }
 
 #[cfg(feature = "compress")]
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CompressedFormat {
     JPEG,
     WEBP,
@@ -110,7 +110,7 @@ pub fn use_manager(
 ) -> Result<Box<dyn Manage>> {
     let uploader: Box<dyn Manage> = match using {
         ManagerCode::Smms => match auth_config {
-            ManagerAuthConfigKind::API { token } => {
+            ManagerAuthConfigKind::API { token, .. } => {
                 let manager = SmMs::new(token.to_string());
                 Box::new(manager)
             }
@@ -271,7 +271,9 @@ impl BaseManager {
         key: &str,
         image_path: &Path,
         form: Option<&[(&str, &str)]>,
+        timeout: u64,
     ) -> Result<Response> {
+        // TODO: base64 上传对体积的限制待处理
         let file_data = read(image_path).await?;
         let file_data = general_purpose::STANDARD.encode(file_data);
 
@@ -294,7 +296,7 @@ impl BaseManager {
 
         let builder = self.request(Method::POST, url, header);
 
-        let resp = json::upload(builder, window.as_ref(), body, id, 5).await?;
+        let resp = json::upload(builder, window.as_ref(), body, id, timeout).await?;
 
         Ok(resp)
     }
@@ -309,6 +311,7 @@ impl BaseManager {
         file_part_name: &str,
         file_kind: &FileKind,
         form: Option<&[(&str, &str)]>,
+        timeout: u64,
     ) -> Result<Response> {
         let file = File::open(&image_path).await?;
         let filename = image_path.file_name().unwrap().to_str().unwrap();
@@ -339,7 +342,7 @@ impl BaseManager {
             UploadFile::new(file, file_kind),
             &mime_type,
             form,
-            60,
+            timeout,
         )
         .await
         .map_err(|e| {

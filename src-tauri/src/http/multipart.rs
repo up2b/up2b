@@ -3,6 +3,7 @@ use std::{sync::Mutex, time::Duration};
 use futures_util::TryStreamExt;
 use read_progress_stream::ReadProgressStream;
 use reqwest::{header::HeaderMap, multipart::Part, Client, Response};
+use serde::{Deserialize, Serialize};
 use tauri::Window;
 use tokio::{fs::File, io::AsyncReadExt};
 use tokio_util::codec::{BytesCodec, FramedRead};
@@ -31,7 +32,8 @@ pub async fn file_to_body(id: u32, window: Window, file: File) -> Result<reqwest
     )))
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "UPPERCASE")]
 pub enum FileKind {
     Stream,
     Buffer,
