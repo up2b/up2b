@@ -2,7 +2,7 @@ use std::{path::Path, str::FromStr};
 
 use reqwest::{
     header::{HeaderMap, HeaderName, ACCEPT},
-    Response, StatusCode,
+    Method, Response, StatusCode,
 };
 use serde_json::{Map, Value};
 use tauri::Window;
@@ -116,9 +116,15 @@ impl Upload {
     }
 }
 
+enum ListRequestMethod {
+    Get,
+    Post { body: Map<String, Value> },
+}
+
 struct List {
     url: String,
     controller: ListResponseController,
+    method: ListRequestMethod,
 }
 
 pub struct ListResponseController {
@@ -306,13 +312,63 @@ impl BaseApiManager {
     }
 
     async fn list(&self) -> Result<Vec<ImageItem>> {
-        let response = self.inner.get(&self.api.list.url, self.headers()?).await?;
+        let response = match &self.api.list.method {
+            ListRequestMethod::Get => self.inner.get(&self.api.list.url, self.headers()?).await?,
+            ListRequestMethod::Post { body } => {
+                let mut body = body.clone();
+                let headers = self.headers()?;
+
+                if let AuthMethod::Body { key } = &self.auth_method {
+                    body.insert(key.to_owned(), Value::String(self.token.clone()));
+                }
+
+                self.inner
+                    .request(Method::POST, &self.api.list.url, headers)
+                    .json(&body)
+                    .send()
+                    .await?
+            }
+        };
 
         self.api.list.controller.parse(response).await
     }
 
+    async fn delete_by_get(&self, kind: &DeleteGetKind, id: &str) -> Result<Response> {
+        // GET 删除认证方式只能是 headers
+        let url = match kind {
+            DeleteGetKind::Path => self.api.delete.url.to_owned() + id,
+            DeleteGetKind::Query { key } => format!("{}?{}={}", self.api.delete.url, key, id),
+        };
+
+        self.inner.get(&url, self.headers()?).await
+    }
+
+    async fn delete_by_post(
+        &self,
+        body: &Map<String, Value>,
+        key: &str,
+        id: &str,
+    ) -> Result<Response> {
+        let mut body = body.clone();
+
+        body.insert(key.to_owned(), Value::String(id.to_owned()));
+
+        if let AuthMethod::Body { key } = &self.auth_method {
+            body.insert(key.clone(), Value::String(self.token.clone()));
+        }
+
+        self.inner
+            .json(&self.api.delete.url, self.headers()?, body)
+            .await
+    }
+
     async fn delete(&self, id: &str) -> Result<()> {
-        Ok(())
+        let resp = match &self.api.delete.method {
+            DeleteMethod::Get { kind } => self.delete_by_get(kind, id).await?,
+            DeleteMethod::Post { body, key } => self.delete_by_post(body, key, id).await?,
+        };
+
+        self.api.delete.controller.parse(resp).await
     }
 
     async fn upload(

@@ -213,6 +213,18 @@ impl BaseManager {
         Ok(resp)
     }
 
+    async fn json<T: Serialize>(&self, url: &str, headers: HeaderMap, body: T) -> Result<Response> {
+        let resp = self
+            .client
+            .post(url)
+            .headers(headers)
+            .json(&body)
+            .send()
+            .await?;
+
+        Ok(resp)
+    }
+
     fn request(&self, method: Method, url: &str, headers: HeaderMap) -> RequestBuilder {
         self.client.request(method, url).headers(headers)
     }
