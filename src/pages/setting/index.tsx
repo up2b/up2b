@@ -18,6 +18,7 @@ import {
   updateConfig,
   verify,
 } from '~/lib'
+import ApiSetting from './components/api.tsx'
 import ProxySetting from './proxy'
 import './index.scss'
 import { open } from '@tauri-apps/api/shell'
@@ -139,25 +140,12 @@ const Setting = ({ config, setConfig }: SettingProps) => {
     switch (imageBedKind) {
       case 'API':
         const apiKey = config!.using as InferKeyType<typeof imageBedKind>
+        console.log(apiKey)
         return (
-          <Form.Item label="TOKEN">
-            <Input.Password
-              placeholder="输入 token"
-              value={config?.auth_config?.[apiKey]?.token || ''}
-              onChange={(e) => {
-                setConfig((pre) => ({
-                  ...pre!,
-                  auth_config: {
-                    ...config?.auth_config,
-                    [apiKey]: {
-                      type: 'API',
-                      token: e.target.value,
-                    },
-                  },
-                }))
-              }}
-            />
-          </Form.Item>
+          <ApiSetting
+            code={apiKey}
+            config={config?.auth_config?.[apiKey]?.api}
+          />
         )
       case 'CHEVERETO':
         const commonKey = config!.using as InferKeyType<typeof imageBedKind>
