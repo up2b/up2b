@@ -1,5 +1,14 @@
 import React, { useState } from 'react'
-import { Divider, Form, Input, Select, Space, Switch } from 'antd'
+import {
+  Divider,
+  Form,
+  Input,
+  InputNumber,
+  Radio,
+  Select,
+  Space,
+  Switch,
+} from 'antd'
 
 interface ApiSettingProps {
   code: ManagerCode
@@ -7,10 +16,20 @@ interface ApiSettingProps {
   config?: ApiConfig
 }
 
+const ALLOWED_FORMATS = ['PNG', 'JPEG', 'GIF', 'WEBP', 'BMP']
+
 const ApiSetting = ({ code, token: defaultToken, config }: ApiSettingProps) => {
   console.log(config)
 
   const [token, setToken] = useState(defaultToken)
+
+  const [selectedFormats, setSelectedFormats] = useState<string[]>(
+    config?.upload.allowed_formats ?? [],
+  )
+
+  const filteredFormats = ALLOWED_FORMATS.filter(
+    (o) => !selectedFormats.includes(o),
+  )
 
   const disabled = code === 'SMMS'
 
@@ -143,6 +162,118 @@ const ApiSetting = ({ code, token: defaultToken, config }: ApiSettingProps) => {
       ) : null}
 
       <Divider>上传</Divider>
+
+      <Form.Item>
+        <Form.Item label="接口">
+          <Input
+            placeholder="输入上传图片接口"
+            defaultValue={config?.upload.url}
+            disabled={disabled}
+          />
+        </Form.Item>
+
+        <Form.Item label="最大体积">
+          <InputNumber
+            placeholder="输入允许的最大体积"
+            defaultValue={config?.upload.max_size / 1024 / 1024}
+            disabled={disabled}
+            addonAfter="MB"
+          />
+        </Form.Item>
+
+        <Form.Item label="允许的格式">
+          <Select
+            mode="multiple"
+            placeholder="选择图片格式"
+            value={selectedFormats}
+            onChange={setSelectedFormats}
+            options={filteredFormats.map((item) => ({
+              value: item,
+              label: item,
+            }))}
+            disabled={disabled}
+          />
+        </Form.Item>
+
+        <Form.Item>
+          <Form.Item label="请求体类型">
+            <Select
+              defaultValue={config?.upload.content_type.type}
+              disabled={disabled}
+              options={[
+                {
+                  value: 'JSON',
+                  label: 'json',
+                },
+                {
+                  value: 'MULTIPART',
+                  label: 'multipart',
+                },
+              ]}
+            />
+          </Form.Item>
+
+          {config?.upload.content_type.type === 'MULTIPART' ? (
+            <>
+              <Form.Item
+                label="上传类型"
+                tooltip="流式响应支持上传进度，流式上传失败时可尝试更换为 bytes"
+              >
+                <Radio.Group
+                  defaultValue={
+                    config?.upload.content_type.file_kind ?? 'STREAM'
+                  }
+                  disabled={disabled}
+                >
+                  <Radio value="STREAM">流</Radio>
+                  <Radio value="BUFFER">bytes</Radio>
+                </Radio.Group>
+              </Form.Item>
+
+              <Form.Item label="图片的表单键">
+                <Input
+                  defaultValue={config.upload.content_type.file_part_name}
+                  disabled={disabled}
+                />
+              </Form.Item>
+            </>
+          ) : (
+            <>
+              {/*TODO: 以后再完善 json 上传*/}
+              <Form.Item label="图片数组的表单键">
+                <Input defaultValue={config?.upload.content_type.key} />
+              </Form.Item>
+
+              <Form.Item label="除图片之外的其他 json 数据">
+                <Input.TextArea />
+              </Form.Item>
+            </>
+          )}
+        </Form.Item>
+
+        <Form.Item>
+          <Form.Item label="图片键">
+            <Input
+              defaultValue={config?.upload.controller.image_url_key}
+              disabled={disabled}
+            />
+          </Form.Item>
+
+          <Form.Item label="删除 id 键">
+            <Input
+              defaultValue={config?.upload.controller.deleted_id_key}
+              disabled={disabled}
+            />
+          </Form.Item>
+
+          <Form.Item label="图片缓存键">
+            <Input
+              defaultValue={config?.upload.controller.thumb_key}
+              disabled={disabled}
+            />
+          </Form.Item>
+        </Form.Item>
+      </Form.Item>
     </>
   )
 }

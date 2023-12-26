@@ -103,17 +103,20 @@ pub struct Upload {
     #[cfg(feature = "compress")]
     compressed_format: CompressedFormat,
     content_type: UploadContentType,
+    /// 请求体中图片之外的其他部分
+    other_body: Option<Map<String, Value>>,
     controller: UploadResponseController,
     timeout: u64,
 }
 
 impl Upload {
-    pub fn new<T: Into<Option<u64>>>(
+    pub fn new<T: Into<Option<u64>>, M: Into<Option<Map<String, Value>>>>(
         url: &str,
         max_size: u64,
         allowed_formats: Vec<AllowedImageFormat>,
         #[cfg(feature = "compress")] compressed_format: CompressedFormat,
         content_type: UploadContentType,
+        other_body: M,
         controller: UploadResponseController,
         timeout: T,
     ) -> Self {
@@ -126,6 +129,7 @@ impl Upload {
             compressed_format,
             content_type,
             controller,
+            other_body: other_body.into(),
             timeout: secs.unwrap_or(5),
         }
     }

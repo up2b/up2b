@@ -37,6 +37,7 @@ lazy_static! {
                 file_part_name: "smfile".to_owned(),
                 file_kind: FileKind::Stream,
             },
+            None,
             UploadResponseController::new("message.url", None, "message.hash"),
             5,
         );
