@@ -68,13 +68,17 @@ impl UploadResponseController {
     pub async fn parse(&self, response: Response) -> Result<ImageItem> {
         let json: Value = response.json().await?;
 
-        let url = match json.get(&self.image_url_key) {
-            None => return Err(crate::Error::Other("没有图片链接".to_owned())),
-            Some(v) => v.as_str().unwrap().to_owned(),
+        debug!("响应体：{}", json);
+
+        let url = match json.get_value_by_keys(&self.image_url_key) {
+            Value::String(s) => s,
+            Value::Null => return Err(Error::Other("没有图片链接".to_owned())),
+            _ => return Err(Error::Other("类型错误".to_owned())),
         };
-        let deleted_id = match json.get(&self.deleted_id_key) {
-            None => return Err(crate::Error::Other("没有删除 id".to_owned())),
-            Some(v) => v.as_str().unwrap().to_owned(),
+        let deleted_id = match json.get_value_by_keys(&self.deleted_id_key) {
+            Value::String(s) => s,
+            Value::Null => return Err(Error::Other("没有删除 id".to_owned())),
+            _ => return Err(Error::Other("类型错误".to_owned())),
         };
 
         match &self.thumb_key {
@@ -84,9 +88,10 @@ impl UploadResponseController {
                 thumb: None,
             }),
             Some(k) => {
-                let thumb = match json.get(k) {
-                    None => None,
-                    Some(v) => Some(v.as_str().unwrap().to_owned()),
+                let thumb = match json.get_value_by_keys(k) {
+                    Value::String(s) => Some(s),
+                    Value::Null => None,
+                    _ => return Err(Error::Other("类型错误".to_owned())),
                 };
 
                 Ok(ImageItem {
@@ -189,21 +194,21 @@ impl ListResponseController {
     async fn parse(&self, response: Response) -> Result<Vec<ImageItem>> {
         let json: Value = response.json().await?;
 
-        let items = match json.get(&self.items_key) {
-            None => return Err(Error::Other("通过 items_key 无法获取列表".to_owned())),
-            Some(v) => v.as_array().unwrap(),
+        let items = match json.get_value_by_keys(&self.items_key) {
+            Value::Array(arr) => arr,
+            _ => return Err(Error::Other("通过 items_key 无法获取列表".to_owned())),
         };
 
         let mut images = Vec::with_capacity(items.len());
 
         for item in items.iter() {
-            let url = match item.get(&self.image_url_key) {
-                None => return Err(Error::Other("没有图片链接".to_owned())),
-                Some(v) => v.as_str().unwrap().to_owned(),
+            let url = match item.get_value_by_keys(&self.image_url_key) {
+                Value::String(s) => s,
+                _ => return Err(Error::Other("没有图片链接".to_owned())),
             };
-            let deleted_id = match item.get(&self.deleted_id_key) {
-                None => return Err(Error::Other("没有删除 id".to_owned())),
-                Some(v) => v.as_str().unwrap().to_owned(),
+            let deleted_id = match item.get_value_by_keys(&self.deleted_id_key) {
+                Value::String(s) => s,
+                _ => return Err(Error::Other("没有删除 id".to_owned())),
             };
 
             let image_item = match &self.thumb_key {
@@ -213,9 +218,9 @@ impl ListResponseController {
                     thumb: None,
                 },
                 Some(k) => {
-                    let thumb = match json.get(k) {
-                        None => None,
-                        Some(v) => Some(v.as_str().unwrap().to_owned()),
+                    let thumb = match json.get_value_by_keys(k) {
+                        Value::String(s) => Some(s),
+                        _ => None,
                     };
 
                     ImageItem {
@@ -282,22 +287,25 @@ impl DeleteResponseController {
             } => {
                 let json: Value = response.json().await?;
 
-                match json.get(&key) {
-                    None => return Err(Error::Other("无法获取删除状态值".to_owned())),
-                    Some(v) => {
-                        if v != should_be {
-                            match message_key {
-                                None => return Err(Error::Other("unkown".to_owned())),
-                                Some(k) => match json.get(k) {
-                                    None => return Err(Error::Other("unkown".to_owned())),
-                                    Some(msg) => {
-                                        return Err(Error::Other(msg.as_str().unwrap().to_owned()))
-                                    }
-                                },
+                let value = json.get_value_by_keys(&key);
+
+                if value.is_null() {
+                    return Err(Error::Other("无法获取删除状态值".to_owned()));
+                }
+
+                debug!("删除状态：{}", value);
+
+                if &value != should_be {
+                    match message_key {
+                        None => return Err(Error::Other("unkown".to_owned())),
+                        Some(k) => match json.get(k) {
+                            None => return Err(Error::Other("unkown".to_owned())),
+                            Some(msg) => {
+                                return Err(Error::Other(msg.as_str().unwrap().to_owned()))
                             }
-                        }
+                        },
                     }
-                };
+                }
             }
         };
 
@@ -349,8 +357,8 @@ impl Api {
     }
 
     #[cfg(feature = "compress")]
-    pub fn compressed_format(&self) -> CompressedFormat {
-        self.upload.compressed_format
+    pub fn compressed_format(&self) -> &CompressedFormat {
+        &self.upload.compressed_format
     }
 }
 
@@ -556,5 +564,21 @@ impl Manage for BaseApiManager {
                 }
             }
         }
+    }
+}
+
+trait SerdeValueParser {
+    fn get_value_by_keys(&self, key_path: &str) -> Value;
+}
+
+impl SerdeValueParser for Value {
+    fn get_value_by_keys(&self, key_path: &str) -> Value {
+        let mut current_value = self;
+
+        for key in key_path.split('.') {
+            current_value = &current_value[key];
+        }
+
+        current_value.clone()
     }
 }

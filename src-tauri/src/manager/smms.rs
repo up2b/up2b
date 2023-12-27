@@ -38,7 +38,7 @@ lazy_static! {
                 file_kind: FileKind::Stream,
             },
             None,
-            UploadResponseController::new("message.url", None, "message.hash"),
+            UploadResponseController::new("data.url", None, "data.hash"),
             5,
         );
 
