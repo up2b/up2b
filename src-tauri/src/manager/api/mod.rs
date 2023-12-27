@@ -1,5 +1,6 @@
 use std::{path::Path, str::FromStr};
 
+use async_trait::async_trait;
 use reqwest::{
     header::{HeaderMap, HeaderName, ACCEPT},
     Method, Response, StatusCode,
@@ -12,7 +13,10 @@ use crate::{error::HeaderError, http::multipart::FileKind, Error, Result};
 
 #[cfg(feature = "compress")]
 use super::CompressedFormat;
-use super::{AllowedImageFormat, BaseManager, ImageItem, UploadResult};
+use super::{
+    AllowedImageFormat, BaseManager, DeleteError, DeleteResponse, Extra, ImageItem, Manage,
+    UploadResult,
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", rename_all = "UPPERCASE")]
@@ -320,40 +324,48 @@ impl Delete {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Api {
+    auth_method: AuthMethod,
     upload: Upload,
     list: List,
     delete: Delete,
 }
 
 impl Api {
-    pub fn new(upload: Upload, list: List, delete: Delete) -> Self {
+    pub fn new(auth_method: AuthMethod, upload: Upload, list: List, delete: Delete) -> Self {
         Self {
+            auth_method,
             upload,
             list,
             delete,
         }
+    }
+
+    pub fn max_size(&self) -> u64 {
+        self.upload.max_size
+    }
+
+    pub fn allowed_formats(&self) -> &[AllowedImageFormat] {
+        &self.upload.allowed_formats
+    }
+
+    #[cfg(feature = "compress")]
+    pub fn compressed_format(&self) -> CompressedFormat {
+        self.upload.compressed_format
     }
 }
 
 #[derive(Debug)]
 pub struct BaseApiManager {
     inner: BaseManager,
-    auth_method: AuthMethod,
     token: String,
     api: Api,
 }
 
 impl BaseApiManager {
-    pub fn new<S: Into<String>>(
-        inner: BaseManager,
-        auth_method: AuthMethod,
-        token: S,
-        api: Api,
-    ) -> Self {
+    pub(crate) fn new<S: Into<String>>(inner: BaseManager, token: S, api: &Api) -> Self {
         Self {
             inner,
-            auth_method,
-            api,
+            api: api.to_owned(),
             token: token.into(),
         }
     }
@@ -366,7 +378,7 @@ impl BaseApiManager {
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, "application/json".parse().unwrap());
 
-        if let AuthMethod::Header { key, prefix } = &self.auth_method {
+        if let AuthMethod::Header { key, prefix } = &self.api.auth_method {
             let auth_key = key.as_deref().unwrap_or("Authorization");
             let key = HeaderName::from_str(auth_key).map_err(HeaderError::InvalidName)?;
 
@@ -388,7 +400,7 @@ impl BaseApiManager {
                 let mut body = body.clone();
                 let headers = self.headers()?;
 
-                if let AuthMethod::Body { key } = &self.auth_method {
+                if let AuthMethod::Body { key } = &self.api.auth_method {
                     body.insert(key.to_owned(), Value::String(self.token.clone()));
                 }
 
@@ -423,7 +435,7 @@ impl BaseApiManager {
 
         body.insert(key.to_owned(), Value::String(id.to_owned()));
 
-        if let AuthMethod::Body { key } = &self.auth_method {
+        if let AuthMethod::Body { key } = &self.api.auth_method {
             body.insert(key.clone(), Value::String(self.token.clone()));
         }
 
@@ -488,5 +500,61 @@ impl BaseApiManager {
         let image_item = self.api.upload.controller.parse(response).await?;
 
         Ok(UploadResult::Response(image_item))
+    }
+}
+
+#[async_trait]
+impl Manage for BaseApiManager {
+    fn allowed_formats(&self) -> Vec<AllowedImageFormat> {
+        self.api.upload.allowed_formats.clone()
+    }
+
+    fn support_stream(&self) -> bool {
+        match &self.api.upload.content_type {
+            UploadContentType::Json { .. } => true,
+            UploadContentType::Multipart { file_kind, .. } => match file_kind {
+                FileKind::Stream => true,
+                _ => false,
+            },
+        }
+    }
+
+    async fn verify(&self) -> Result<Option<Extra>> {
+        // TODO: api 类型的图床的 token 验证以后再实现
+        Ok(None)
+    }
+
+    async fn get_all_images(&self) -> Result<Vec<ImageItem>> {
+        self.list().await
+    }
+
+    async fn delete_image(&self, id: &str) -> Result<DeleteResponse> {
+        match self.delete(id).await {
+            Ok(()) => Ok(DeleteResponse {
+                success: true,
+                error: None,
+            }),
+            Err(e) => Ok(DeleteResponse {
+                success: false,
+                error: Some(DeleteError::Other(e.to_string())),
+            }),
+        }
+    }
+
+    async fn upload_image(
+        &self,
+        window: Option<Window>,
+        id: u32,
+        image_path: &Path,
+    ) -> UploadResult {
+        match self.upload(window, id, image_path, None).await {
+            Ok(r) => r,
+            Err(e) => {
+                return UploadResult::Error {
+                    code: e.as_string(),
+                    detail: e,
+                }
+            }
+        }
     }
 }

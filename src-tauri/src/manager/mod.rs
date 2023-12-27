@@ -25,6 +25,7 @@ use crate::{
 use {crate::config::CONFIG, crate::util::image::compress::compress};
 
 use self::{
+    api::BaseApiManager,
     chevereto::{Imgse, Imgtg},
     smms::SmMs,
 };
@@ -138,6 +139,21 @@ pub fn use_manager(
             }
             _ => return Err(Error::Config(ConfigError::Type("imgtg.com".to_string()))),
         },
+        ManagerCode::Custom(s) => match auth_config {
+            ManagerAuthConfigKind::API { token, api } => {
+                let manager = BaseManager::new(
+                    s,
+                    api.max_size(),
+                    api.allowed_formats().to_vec(),
+                    #[cfg(feature = "compress")]
+                    api.compressed_format(),
+                );
+                let custom = BaseApiManager::new(manager, token, api);
+
+                Box::new(custom)
+            }
+            _ => return Err(Error::Config(ConfigError::Type(s.to_string()))),
+        },
     };
 
     Ok(uploader)
@@ -166,13 +182,10 @@ async fn is_exceeded(
 }
 
 #[derive(Debug, Clone)]
-struct BaseManager {
+pub(crate) struct BaseManager {
     name: String,
-    base_url: String,
     max_size: u64,
     client: Client,
-    file_part_name: String,
-    file_kind: FileKind,
     allowed_formats: Vec<AllowedImageFormat>,
     #[cfg(feature = "compress")]
     compressed_format: CompressedFormat,
@@ -181,19 +194,13 @@ struct BaseManager {
 impl BaseManager {
     fn new<S: Into<String>>(
         name: S,
-        base_url: S,
         max_size: u64,
-        file_part_name: S,
-        file_kind: FileKind,
         allowed_formats: Vec<AllowedImageFormat>,
         #[cfg(feature = "compress")] compressed_format: CompressedFormat,
     ) -> Self {
         Self {
             name: name.into(),
-            base_url: base_url.into(),
             max_size,
-            file_part_name: file_part_name.into(),
-            file_kind,
             client: Client::new(),
             allowed_formats,
             #[cfg(feature = "compress")]
@@ -360,6 +367,8 @@ impl BaseManager {
         url: &str,
         header: HeaderMap,
         image_path: &Path,
+        file_kind: &FileKind,
+        file_part_name: &str,
         form: Option<&[(&str, &str)]>,
     ) -> Result<Response> {
         let file = File::open(&image_path).await?;
@@ -386,9 +395,9 @@ impl BaseManager {
             url,
             header,
             id,
-            &self.file_part_name,
+            file_part_name,
             filename,
-            UploadFile::new(file, &self.file_kind),
+            UploadFile::new(file, file_kind),
             &mime_type,
             form,
             60,
@@ -413,9 +422,10 @@ pub enum ManagerKind {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum ManagerCode {
-    Smms,
+    Smms, // 内置 smms 支持，与 Custom
     Imgse,
     Imgtg,
+    Custom(String),
 }
 
 impl Display for ManagerCode {
@@ -433,25 +443,27 @@ impl Default for ManagerCode {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ManagerItem {
     pub key: ManagerCode,
-    pub name: &'static str,
-    pub index: &'static str,
+    pub name: String,
+    pub index: Option<&'static str>,
     pub r#type: ManagerKind,
 }
 
 impl ManagerCode {
-    pub fn name(&self) -> &'static str {
+    pub fn name(&self) -> String {
         match self {
-            ManagerCode::Smms => "sm.ms",
-            ManagerCode::Imgse => "imgse.com",
-            ManagerCode::Imgtg => "imgtg.com",
+            ManagerCode::Smms => "sm.ms".to_owned(),
+            ManagerCode::Imgse => "imgse.com".to_owned(),
+            ManagerCode::Imgtg => "imgtg.com".to_owned(),
+            ManagerCode::Custom(s) => s.to_owned(),
         }
     }
 
-    pub fn index(&self) -> &'static str {
+    pub fn index(&self) -> Option<&'static str> {
         match self {
-            ManagerCode::Smms => "https://sm.ms",
-            ManagerCode::Imgse => "https://imgse.com",
-            ManagerCode::Imgtg => "https://imgtg.com",
+            ManagerCode::Smms => Some("https://sm.ms"),
+            ManagerCode::Imgse => Some("https://imgse.com"),
+            ManagerCode::Imgtg => Some("https://imgtg.com"),
+            _ => None,
         }
     }
 
@@ -474,6 +486,12 @@ impl ManagerCode {
                 index: self.index(),
                 key: self,
                 r#type: ManagerKind::Chevereto,
+            },
+            ManagerCode::Custom(ref s) => ManagerItem {
+                name: s.clone(),
+                index: None,
+                key: self,
+                r#type: ManagerKind::API,
             },
         }
     }

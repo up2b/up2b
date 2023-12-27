@@ -8,10 +8,7 @@ use std::{
 use bytes::Bytes;
 use futures::stream::Stream;
 use read_progress_stream::ReadProgressStream;
-use reqwest::{
-    header::{HeaderMap, CONTENT_TYPE},
-    RequestBuilder, Response,
-};
+use reqwest::{header::CONTENT_TYPE, RequestBuilder, Response};
 use serde_json::Value;
 use tauri::Window;
 

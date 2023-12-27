@@ -1,3 +1,16 @@
+interface AuthHeaderMethod {
+  type: 'HEADER'
+  key?: string
+  prefix?: string
+}
+
+interface AuthBodyMethod {
+  type: 'BODY'
+  key: string
+}
+
+type AuthMethod = AuthHeaderMethod | AuthBodyMethod
+
 interface ApiAuthConfig {
   type: 'API'
   token: string
@@ -5,6 +18,7 @@ interface ApiAuthConfig {
 }
 
 interface ApiConfig {
+  auth_method: AuthMethod
   list: ApiListConfig
   delete: ApiDeleteConfig
   upload: ApiUploadConfig

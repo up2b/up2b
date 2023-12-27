@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Divider,
   Form,
@@ -9,6 +9,7 @@ import {
   Space,
   Switch,
 } from 'antd'
+import { getSmmsConfig } from '~/lib/api'
 
 interface Data {
   token: string
@@ -25,6 +26,9 @@ interface ApiSettingProps {
 const ALLOWED_FORMATS = ['PNG', 'JPEG', 'GIF', 'WEBP', 'BMP']
 
 const initApiConfig: ApiConfig = {
+  auth_method: {
+    type: 'HEADER',
+  },
   list: {
     url: '',
     method: { type: 'GET' },
@@ -57,10 +61,19 @@ const initApiConfig: ApiConfig = {
 }
 
 const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
+  console.log(code, config)
   const [data, setData] = useState<Data>({
     token: token ?? '',
     config: config ?? initApiConfig,
   })
+
+  useEffect(() => {
+    if (code === 'SMMS' && !config) {
+      getSmmsConfig().then((c) => {
+        setData({ ...data, config: c })
+      })
+    }
+  }, [code, config])
 
   const filteredFormats = ALLOWED_FORMATS.filter(
     (o) => !config?.upload.allowed_formats.includes(o),
@@ -74,6 +87,8 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
     onChange(data)
   }
 
+  console.log(data)
+
   return (
     <>
       <Form.Item label="TOKEN">
@@ -84,12 +99,110 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         />
       </Form.Item>
 
+      <Divider>认证方式</Divider>
+
+      <Form.Item label="token 所在的位置" tooltip="请求体只能是 json 类型">
+        <Radio.Group
+          value={data.config.auth_method.type}
+          disabled={disabled}
+          onChange={(e) =>
+            handleChange({
+              ...data,
+              config: {
+                ...data.config,
+                auth_method:
+                  e.target.value === 'HEADER'
+                    ? {
+                        ...(data.config.auth_method as AuthHeaderMethod),
+                        type: 'HEADER',
+                      }
+                    : {
+                        ...(data.config.auth_method as AuthBodyMethod),
+                        type: 'BODY',
+                      },
+              },
+            })
+          }
+        >
+          <Radio value="HEADER">请求头</Radio>
+          <Radio value="BODY">请求体</Radio>
+        </Radio.Group>
+      </Form.Item>
+
+      {data.config.auth_method.type === 'HEADER' ? (
+        <Space>
+          <Form.Item label="key">
+            <Input
+              value={data.config.auth_method.key ?? 'Authorization'}
+              disabled={disabled}
+              onChange={(e) =>
+                handleChange({
+                  ...data,
+                  config: {
+                    ...data.config,
+                    auth_method: {
+                      ...(data.config.auth_method as AuthHeaderMethod),
+                      key: e.target.value,
+                    },
+                  },
+                })
+              }
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="前缀"
+            tooltip="token 前的前缀，不可省略空格，如果不需要可不填此项"
+          >
+            <Input
+              value={data.config.auth_method.prefix}
+              placeholder="token 前缀"
+              disabled={disabled}
+              onChange={(e) =>
+                handleChange({
+                  ...data,
+                  config: {
+                    ...data.config,
+                    auth_method: {
+                      ...(data.config.auth_method as AuthHeaderMethod),
+                      prefix: e.target.value,
+                    },
+                  },
+                })
+              }
+            />
+          </Form.Item>
+        </Space>
+      ) : (
+        <Form.Item label="key">
+          {' '}
+          <Form.Item label="key">
+            <Input
+              value={data.config.auth_method.key}
+              disabled={disabled}
+              onChange={(e) =>
+                handleChange({
+                  ...data,
+                  config: {
+                    ...data.config,
+                    auth_method: {
+                      ...(data.config.auth_method as AuthHeaderMethod),
+                      key: e.target.value,
+                    },
+                  },
+                })
+              }
+            />
+          </Form.Item>
+        </Form.Item>
+      )}
+
       <Divider>图片列表</Divider>
 
       <Form.Item label="接口">
         <Input
           placeholder="输入图片列表接口"
-          defaultValue={data.config.list.url}
+          value={data.config.list.url}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
@@ -105,7 +218,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
       <Form.Item label="请求方法">
         <Select
-          defaultValue={data.config.list.method.type}
+          value={data.config.list.method.type}
           disabled={disabled}
           onChange={(value) =>
             handleChange({
@@ -130,7 +243,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           <Form.Item label="图片数组键">
             <Input
               placeholder="输入图片数组键名"
-              defaultValue={data.config.list.controller.items_key}
+              value={data.config.list.controller.items_key}
               disabled={disabled}
               onChange={(e) =>
                 handleChange({
@@ -153,7 +266,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           <Form.Item label="图片地址键">
             <Input
               placeholder="输入图片地址键名"
-              defaultValue={data.config.list.controller.image_url_key}
+              value={data.config.list.controller.image_url_key}
               disabled={disabled}
               onChange={(e) =>
                 handleChange({
@@ -176,7 +289,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           <Form.Item label="图片删除 id 键">
             <Input
               placeholder="输入图片删除 id 键名"
-              defaultValue={data.config.list.controller.deleted_id_key}
+              value={data.config.list.controller.deleted_id_key}
               disabled={disabled}
               onChange={(e) =>
                 handleChange({
@@ -199,7 +312,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           <Form.Item label="图片缓存键">
             <Input
               placeholder="输入图片缓存键名"
-              defaultValue={data.config.list.controller.thumb_key}
+              value={data.config.list.controller.thumb_key}
               disabled={disabled}
               onChange={(e) =>
                 handleChange({
@@ -226,7 +339,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
       <Form.Item label="接口">
         <Input
           placeholder="输入图片删除接口"
-          defaultValue={data.config.delete.url}
+          value={data.config.delete.url}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
@@ -245,7 +358,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
       <Form.Item label="请求方法">
         <Select
-          defaultValue={data.config.delete.method.type}
+          value={data.config.delete.method.type}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
@@ -276,7 +389,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         tooltip="删除图片如果有响应体则应该传入响应体中的有效属性键，否则以响应状态码判断是否成功"
       >
         <Switch
-          defaultValue={data.config.delete.controller.type === 'JSON'}
+          value={data.config.delete.controller.type === 'JSON'}
           disabled={disabled}
           onChange={(v) =>
             handleChange({
@@ -305,7 +418,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
             <Form.Item label="成功键">
               <Input
                 placeholder="删除成功与否的键名"
-                defaultValue={data.config.delete.controller.key}
+                value={data.config.delete.controller.key}
                 disabled={disabled}
                 onChange={(e) =>
                   handleChange({
@@ -330,9 +443,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
               <Input
                 addonBefore={
                   <Select
-                    defaultValue={
-                      typeof data.config.delete.controller.should_be
-                    }
+                    value={typeof data.config.delete.controller.should_be}
                     disabled={disabled}
                   >
                     <Select.Option value="boolean">布尔</Select.Option>
@@ -341,7 +452,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
                   </Select>
                 }
                 placeholder="删除成功的值"
-                defaultValue={data.config.delete.controller.should_be}
+                value={data.config.delete.controller.should_be}
                 disabled={disabled}
                 onChange={(e) =>
                   handleChange({
@@ -366,7 +477,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
             <Form.Item label="失败消息键">
               <Input
                 placeholder="删除失败的消息键名"
-                defaultValue={data.config.delete.controller.message_key}
+                value={data.config.delete.controller.message_key}
                 disabled={disabled}
                 onChange={(e) =>
                   handleChange({
@@ -396,7 +507,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         <Form.Item label="接口">
           <Input
             placeholder="输入上传图片接口"
-            defaultValue={data.config.upload.url}
+            value={data.config.upload.url}
             disabled={disabled}
             onChange={(e) =>
               handleChange({
@@ -416,7 +527,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         <Form.Item label="最大体积">
           <InputNumber
             placeholder="输入允许的最大体积"
-            defaultValue={
+            value={
               data.config.upload.max_size
                 ? data.config.upload.max_size / 1024 / 1024
                 : undefined
@@ -466,7 +577,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
         <Form.Item label="请求体类型">
           <Radio.Group
-            defaultValue={data.config.upload.content_type.type}
+            value={data.config.upload.content_type.type}
             disabled={disabled}
             onChange={(e) => {
               handleChange({
@@ -530,7 +641,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
             <Form.Item label="图片的表单键">
               <Input
-                defaultValue={data.config.upload.content_type.file_part_name}
+                value={data.config.upload.content_type.file_part_name}
                 disabled={disabled}
                 onChange={(e) => {
                   handleChange({
@@ -555,7 +666,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           <>
             {/*TODO: 以后再完善 json 上传*/}
             <Form.Item label="图片数组的表单键">
-              <Input defaultValue={data.config.upload.content_type.key} />
+              <Input value={data.config.upload.content_type.key} />
             </Form.Item>
 
             <Form.Item label="除图片之外的其他 json 数据">
@@ -567,7 +678,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         <Space>
           <Form.Item label="图片键">
             <Input
-              defaultValue={data.config.upload.controller.image_url_key}
+              value={data.config.upload.controller.image_url_key}
               disabled={disabled}
               onChange={(e) => {
                 handleChange({
@@ -589,7 +700,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
           <Form.Item label="删除 id 键">
             <Input
-              defaultValue={data.config.upload.controller.deleted_id_key}
+              value={data.config.upload.controller.deleted_id_key}
               disabled={disabled}
               onChange={(e) => {
                 handleChange({
@@ -611,7 +722,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
           <Form.Item label="图片缓存键">
             <Input
-              defaultValue={data.config.upload.controller.thumb_key}
+              value={data.config.upload.controller.thumb_key}
               disabled={disabled}
               onChange={(e) => {
                 handleChange({

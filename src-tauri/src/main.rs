@@ -16,6 +16,8 @@ extern crate lazy_static;
 extern crate simplelog;
 
 use error::AuthConfigError;
+use manager::api::Api;
+use manager::smms::SMMS_API;
 use manager::ManagerItem;
 use simplelog::CombinedLogger;
 #[cfg(not(debug_assertions))]
@@ -91,9 +93,15 @@ fn get_image_beds() -> &'static [ManagerItem] {
 
 #[tauri::command]
 async fn get_config() -> Option<Config> {
-    let config = CONFIG.read().await;
+    let conf = CONFIG.read().await;
 
-    config.clone()
+    conf.clone()
+}
+
+#[tauri::command]
+async fn smms_config() -> Api {
+    // 如果没有配置文件，将 smms 示例添加到配置中
+    SMMS_API.clone()
 }
 
 #[tauri::command]
@@ -206,6 +214,7 @@ async fn main() {
             allowed_formats,
             toggle_manager,
             automatic_compression,
+            smms_config
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

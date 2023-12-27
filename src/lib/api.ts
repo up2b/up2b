@@ -50,3 +50,7 @@ export const getUsingImageBed = async () => {
 export const getAllowedFormats = async () => {
   return await invoke<AllowedImageFormat[]>('allowed_formats')
 }
+
+export const getSmmsConfig = async () => {
+  return await invoke<ApiConfig>('smms_config')
+}

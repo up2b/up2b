@@ -46,11 +46,12 @@ const Setting = ({ config, setConfig }: SettingProps) => {
   const [index, setIndex] = useState<string | undefined>(undefined)
 
   useEffect(() => {
-    !config &&
+    if (!config) {
       getConfig().then((c) => {
         setConfig(c)
         setDefaultConfig(c)
       })
+    }
 
     getImageBeds().then((r) => {
       setImageBeds(r)
@@ -140,7 +141,6 @@ const Setting = ({ config, setConfig }: SettingProps) => {
     switch (imageBedKind) {
       case 'API':
         const apiKey = config!.using as InferKeyType<typeof imageBedKind>
-        console.log(apiKey)
         return (
           <ApiSetting
             code={apiKey}
@@ -214,8 +214,6 @@ const Setting = ({ config, setConfig }: SettingProps) => {
         )
     }
   }
-
-  console.log(config)
 
   return (
     <div id="setting">

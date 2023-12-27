@@ -60,7 +60,12 @@ lazy_static! {
             },
         );
 
-        Api::new(upload, list, delete)
+        let auth_method = AuthMethod::Header {
+            key: None,
+            prefix: None,
+        };
+
+        Api::new(auth_method, upload, list, delete)
     };
 }
 
@@ -124,17 +129,13 @@ struct SmUploadResponse {
 #[derive(Debug)]
 pub struct SmMs {
     inner: BaseApiManager,
-    token: String,
 }
 
 impl SmMs {
     pub fn new(token: String) -> Self {
         let manager = BaseManager::new(
             "sm.ms",
-            "https://smms.app/api/v2/",
             5 * 1024 * 1024,
-            "smfile",
-            FileKind::Stream,
             vec![
                 AllowedImageFormat::Jpeg,
                 AllowedImageFormat::Png,
@@ -146,16 +147,8 @@ impl SmMs {
             CompressedFormat::WEBP,
         );
 
-        let inner = BaseApiManager::new(
-            manager,
-            AuthMethod::Header {
-                key: None,
-                prefix: None,
-            },
-            token.clone(),
-            SMMS_API.clone(),
-        );
-        SmMs { inner, token }
+        let inner = BaseApiManager::new(manager, token.clone(), &SMMS_API);
+        SmMs { inner }
     }
 }
 
