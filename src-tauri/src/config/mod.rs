@@ -171,13 +171,16 @@ fn read_config() -> Result<Option<Config>> {
 
     let mut config: Config = toml::from_str(&config_str)?;
 
-    config.auth_config.insert(
-        ManagerCode::Smms,
-        ManagerAuthConfigKind::API {
-            token: "".to_owned(),
-            api: SMMS_API.clone(),
-        },
-    );
+    // 加载 smms 示例配置
+    if config.auth_config.get(&ManagerCode::Smms).is_none() {
+        config.auth_config.insert(
+            ManagerCode::Smms,
+            ManagerAuthConfigKind::API {
+                token: "".to_owned(),
+                api: SMMS_API.clone(),
+            },
+        );
+    }
 
     Ok(Some(config))
 }

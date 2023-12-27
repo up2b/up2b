@@ -144,7 +144,21 @@ const Setting = ({ config, setConfig }: SettingProps) => {
         return (
           <ApiSetting
             code={apiKey}
+            token={config?.auth_config?.[apiKey]?.token}
             config={config?.auth_config?.[apiKey]?.api}
+            onChange={(data) => {
+              setConfig((pre) => ({
+                ...pre!,
+                auth_config: {
+                  ...config?.auth_config,
+                  [apiKey]: {
+                    type: 'API',
+                    token: data.token,
+                    api: data.config,
+                  },
+                },
+              }))
+            }}
           />
         )
       case 'CHEVERETO':
@@ -252,16 +266,16 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                     pre
                       ? { ...pre, using: v }
                       : {
-                        using: v,
-                        use_proxy: false,
-                        automatic_compression: false,
-                        auth_config: {
-                          [v]: {
-                            type: imageBeds.find((item) => item.key === v)
-                              ?.type,
+                          using: v,
+                          use_proxy: false,
+                          automatic_compression: false,
+                          auth_config: {
+                            [v]: {
+                              type: imageBeds.find((item) => item.key === v)
+                                ?.type,
+                            },
                           },
                         },
-                      },
                   )
                 }
               >
@@ -301,17 +315,17 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                 disabled={
                   (filterImageBed()?.type === 'API'
                     ? !(config?.auth_config?.[config.using] as ApiAuthConfig)
-                      ?.token
+                        ?.token
                     : !(
-                      config?.auth_config?.[
-                      config.using
-                      ] as CheveretoAuthConfig
-                    )?.username ||
-                    !(
-                      config?.auth_config?.[
-                      config.using
-                      ] as CheveretoAuthConfig
-                    )?.password) || areObjectsEqual(defaultConfig, config)
+                        config?.auth_config?.[
+                          config.using
+                        ] as CheveretoAuthConfig
+                      )?.username ||
+                      !(
+                        config?.auth_config?.[
+                          config.using
+                        ] as CheveretoAuthConfig
+                      )?.password) || areObjectsEqual(defaultConfig, config)
                 }
               >
                 {verifying ? '验证中...' : '保存'}
