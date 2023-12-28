@@ -11,16 +11,11 @@ import {
 } from 'antd'
 import { getSmmsConfig } from '~/lib/api'
 
-interface Data {
-  token: string
-  config: ApiConfig
-}
-
 interface ApiSettingProps {
   code: string
   token?: string
   config?: ApiConfig
-  onChange: (data: Data) => void
+  onChange: (data: ApiAuthConfig) => void
 }
 
 const ALLOWED_FORMATS = ['PNG', 'JPEG', 'GIF', 'WEBP', 'BMP']
@@ -62,15 +57,16 @@ const initApiConfig: ApiConfig = {
 
 const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
   console.log(code, config)
-  const [data, setData] = useState<Data>({
+  const [data, setData] = useState<ApiAuthConfig>({
+    type: 'API',
     token: token ?? '',
-    config: config ?? initApiConfig,
+    api: config ?? initApiConfig,
   })
 
   useEffect(() => {
     if (code === 'SMMS' && !config) {
       getSmmsConfig().then((c) => {
-        setData({ ...data, config: c })
+        setData({ ...data, api: c })
       })
     }
   }, [code, config])
@@ -81,7 +77,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
   const disabled = code === 'SMMS'
 
-  const handleChange = (data: Data) => {
+  const handleChange = (data: ApiAuthConfig) => {
     setData(data)
 
     onChange(data)
@@ -103,21 +99,21 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
       <Form.Item label="token 所在的位置" tooltip="请求体只能是 json 类型">
         <Radio.Group
-          value={data.config.auth_method.type}
+          value={data.api.auth_method.type}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
               ...data,
-              config: {
-                ...data.config,
+              api: {
+                ...data.api,
                 auth_method:
                   e.target.value === 'HEADER'
                     ? {
-                      ...(data.config.auth_method as AuthHeaderMethod),
+                      ...(data.api.auth_method as AuthHeaderMethod),
                       type: 'HEADER',
                     }
                     : {
-                      ...(data.config.auth_method as AuthBodyMethod),
+                      ...(data.api.auth_method as AuthBodyMethod),
                       type: 'BODY',
                     },
               },
@@ -129,19 +125,19 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         </Radio.Group>
       </Form.Item>
 
-      {data.config.auth_method.type === 'HEADER' ? (
+      {data.api.auth_method.type === 'HEADER' ? (
         <Space>
           <Form.Item label="key">
             <Input
-              value={data.config.auth_method.key ?? 'Authorization'}
+              value={data.api.auth_method.key ?? 'Authorization'}
               disabled={disabled}
               onChange={(e) =>
                 handleChange({
                   ...data,
-                  config: {
-                    ...data.config,
+                  api: {
+                    ...data.api,
                     auth_method: {
-                      ...(data.config.auth_method as AuthHeaderMethod),
+                      ...(data.api.auth_method as AuthHeaderMethod),
                       key: e.target.value,
                     },
                   },
@@ -155,16 +151,16 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
             tooltip="token 前的前缀，不可省略空格，如果不需要可不填此项"
           >
             <Input
-              value={data.config.auth_method.prefix}
+              value={data.api.auth_method.prefix}
               placeholder="token 前缀"
               disabled={disabled}
               onChange={(e) =>
                 handleChange({
                   ...data,
-                  config: {
-                    ...data.config,
+                  api: {
+                    ...data.api,
                     auth_method: {
-                      ...(data.config.auth_method as AuthHeaderMethod),
+                      ...(data.api.auth_method as AuthHeaderMethod),
                       prefix: e.target.value,
                     },
                   },
@@ -176,15 +172,15 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
       ) : (
         <Form.Item label="key">
           <Input
-            value={data.config.auth_method.key}
+            value={data.api.auth_method.key}
             disabled={disabled}
             onChange={(e) =>
               handleChange({
                 ...data,
-                config: {
-                  ...data.config,
+                api: {
+                  ...data.api,
                   auth_method: {
-                    ...(data.config.auth_method as AuthHeaderMethod),
+                    ...(data.api.auth_method as AuthHeaderMethod),
                     key: e.target.value,
                   },
                 },
@@ -199,14 +195,14 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
       <Form.Item label="接口">
         <Input
           placeholder="输入图片列表接口"
-          value={data.config.list.url}
+          value={data.api.list.url}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
               ...data,
-              config: {
-                ...data.config,
-                list: { ...data.config.list, url: e.target.value },
+              api: {
+                ...data.api,
+                list: { ...data.api.list, url: e.target.value },
               },
             })
           }
@@ -215,16 +211,16 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
       <Form.Item label="请求方法">
         <Radio.Group
-          value={data.config.list.method.type}
+          value={data.api.list.method.type}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
               ...data,
-              config: {
-                ...data.config,
+              api: {
+                ...data.api,
                 list: {
-                  ...data.config.list,
-                  method: { ...data.config.list.method, type: e.target.value },
+                  ...data.api.list,
+                  method: { ...data.api.list.method, type: e.target.value },
                 },
               },
             })
@@ -240,17 +236,17 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           <Form.Item label="图片数组键">
             <Input
               placeholder="输入图片数组键名"
-              value={data.config.list.controller.items_key}
+              value={data.api.list.controller.items_key}
               disabled={disabled}
               onChange={(e) =>
                 handleChange({
                   ...data,
-                  config: {
-                    ...data.config,
+                  api: {
+                    ...data.api,
                     list: {
-                      ...data.config.list,
+                      ...data.api.list,
                       controller: {
-                        ...data.config.list.controller,
+                        ...data.api.list.controller,
                         items_key: e.target.value,
                       },
                     },
@@ -263,17 +259,17 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           <Form.Item label="图片地址键">
             <Input
               placeholder="输入图片地址键名"
-              value={data.config.list.controller.image_url_key}
+              value={data.api.list.controller.image_url_key}
               disabled={disabled}
               onChange={(e) =>
                 handleChange({
                   ...data,
-                  config: {
-                    ...data.config,
+                  api: {
+                    ...data.api,
                     list: {
-                      ...data.config.list,
+                      ...data.api.list,
                       controller: {
-                        ...data.config.list.controller,
+                        ...data.api.list.controller,
                         image_url_key: e.target.value,
                       },
                     },
@@ -286,17 +282,17 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           <Form.Item label="图片删除 id 键">
             <Input
               placeholder="输入图片删除 id 键名"
-              value={data.config.list.controller.deleted_id_key}
+              value={data.api.list.controller.deleted_id_key}
               disabled={disabled}
               onChange={(e) =>
                 handleChange({
                   ...data,
-                  config: {
-                    ...data.config,
+                  api: {
+                    ...data.api,
                     list: {
-                      ...data.config.list,
+                      ...data.api.list,
                       controller: {
-                        ...data.config.list.controller,
+                        ...data.api.list.controller,
                         deleted_id_key: e.target.value,
                       },
                     },
@@ -309,17 +305,17 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           <Form.Item label="图片缓存键">
             <Input
               placeholder="输入图片缓存键名"
-              value={data.config.list.controller.thumb_key}
+              value={data.api.list.controller.thumb_key}
               disabled={disabled}
               onChange={(e) =>
                 handleChange({
                   ...data,
-                  config: {
-                    ...data.config,
+                  api: {
+                    ...data.api,
                     list: {
-                      ...data.config.list,
+                      ...data.api.list,
                       controller: {
-                        ...data.config.list.controller,
+                        ...data.api.list.controller,
                         thumb_key: e.target.value,
                       },
                     },
@@ -336,15 +332,15 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
       <Form.Item label="接口">
         <Input
           placeholder="输入图片删除接口"
-          value={data.config.delete.url}
+          value={data.api.delete.url}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
               ...data,
-              config: {
-                ...data.config,
+              api: {
+                ...data.api,
                 delete: {
-                  ...data.config.delete,
+                  ...data.api.delete,
                   url: e.target.value,
                 },
               },
@@ -355,21 +351,21 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
       <Form.Item label="请求方法">
         <Radio.Group
-          value={data.config.delete.method.type}
+          value={data.api.delete.method.type}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
               ...data,
-              config: {
-                ...data.config,
+              api: {
+                ...data.api,
                 delete: {
-                  ...data.config.delete,
+                  ...data.api.delete,
                   method:
                     e.target.value === 'GET'
                       ? {
                         type: 'GET',
                         kind:
-                          (data.config.delete.method as ApiDeleteGetMethod)
+                          (data.api.delete.method as ApiDeleteGetMethod)
                             .kind ??
                           (initApiConfig.delete.method as ApiDeleteGetMethod)
                             .kind,
@@ -385,23 +381,23 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         </Radio.Group>
       </Form.Item>
 
-      {data.config.delete.method.type === 'GET' ? (
+      {data.api.delete.method.type === 'GET' ? (
         <>
           <Form.Item label="删除 id 所在位置">
             <Radio.Group
               disabled={disabled}
-              value={data.config.delete.method.kind.type ?? 'PATH'}
+              value={data.api.delete.method.kind.type ?? 'PATH'}
               onChange={(e) =>
                 handleChange({
                   ...data,
-                  config: {
-                    ...data.config,
+                  api: {
+                    ...data.api,
                     delete: {
-                      ...data.config.delete,
+                      ...data.api.delete,
                       method: {
-                        ...(data.config.delete.method as ApiDeleteGetMethod),
+                        ...(data.api.delete.method as ApiDeleteGetMethod),
                         kind: {
-                          ...(data.config.delete.method as ApiDeleteGetMethod)
+                          ...(data.api.delete.method as ApiDeleteGetMethod)
                             .kind,
                           type: e.target.value,
                         },
@@ -416,7 +412,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
             </Radio.Group>
           </Form.Item>
 
-          {data.config.delete.method.kind.type === 'QUERY' ? (
+          {data.api.delete.method.kind.type === 'QUERY' ? (
             <Form.Item label="key">
               <Input />
             </Form.Item>
@@ -429,18 +425,18 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         tooltip="删除图片如果有响应体则应该传入响应体中的有效属性键，否则以响应状态码判断是否成功"
       >
         <Switch
-          value={data.config.delete.controller.type === 'JSON'}
+          value={data.api.delete.controller.type === 'JSON'}
           disabled={disabled}
           onChange={(v) =>
             handleChange({
               ...data,
-              config: {
-                ...data.config,
+              api: {
+                ...data.api,
                 delete: {
-                  ...data.config.delete,
+                  ...data.api.delete,
                   controller: v
                     ? {
-                      ...(data.config.delete
+                      ...(data.api.delete
                         .controller as ApiDeleteJsonController),
                       type: 'JSON',
                     }
@@ -452,23 +448,23 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         />
       </Form.Item>
 
-      {data.config.delete.controller.type === 'JSON' ? (
+      {data.api.delete.controller.type === 'JSON' ? (
         <Form.Item>
           <Space>
             <Form.Item label="成功键">
               <Input
                 placeholder="删除成功与否的键名"
-                value={data.config.delete.controller.key}
+                value={data.api.delete.controller.key}
                 disabled={disabled}
                 onChange={(e) =>
                   handleChange({
                     ...data,
-                    config: {
-                      ...data.config,
+                    api: {
+                      ...data.api,
                       delete: {
-                        ...data.config.delete,
+                        ...data.api.delete,
                         controller: {
-                          ...(data.config.delete
+                          ...(data.api.delete
                             .controller as ApiDeleteJsonController),
                           key: e.target.value,
                         },
@@ -483,7 +479,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
               <Input
                 addonBefore={
                   <Select
-                    value={typeof data.config.delete.controller.should_be}
+                    value={typeof data.api.delete.controller.should_be}
                     disabled={disabled}
                   >
                     <Select.Option value="boolean">布尔</Select.Option>
@@ -492,17 +488,17 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
                   </Select>
                 }
                 placeholder="删除成功的值"
-                value={data.config.delete.controller.should_be}
+                value={data.api.delete.controller.should_be}
                 disabled={disabled}
                 onChange={(e) =>
                   handleChange({
                     ...data,
-                    config: {
-                      ...data.config,
+                    api: {
+                      ...data.api,
                       delete: {
-                        ...data.config.delete,
+                        ...data.api.delete,
                         controller: {
-                          ...(data.config.delete
+                          ...(data.api.delete
                             .controller as ApiDeleteJsonController),
                           // TODO: 根据 addonBefore 的数据类型进行转换
                           should_be: e.target.value,
@@ -517,17 +513,17 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
             <Form.Item label="失败消息键">
               <Input
                 placeholder="删除失败的消息键名"
-                value={data.config.delete.controller.message_key}
+                value={data.api.delete.controller.message_key}
                 disabled={disabled}
                 onChange={(e) =>
                   handleChange({
                     ...data,
-                    config: {
-                      ...data.config,
+                    api: {
+                      ...data.api,
                       delete: {
-                        ...data.config.delete,
+                        ...data.api.delete,
                         controller: {
-                          ...(data.config.delete
+                          ...(data.api.delete
                             .controller as ApiDeleteJsonController),
                           message_key: e.target.value,
                         },
@@ -547,15 +543,15 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         <Form.Item label="接口">
           <Input
             placeholder="输入上传图片接口"
-            value={data.config.upload.url}
+            value={data.api.upload.url}
             disabled={disabled}
             onChange={(e) =>
               handleChange({
                 ...data,
-                config: {
-                  ...data.config,
+                api: {
+                  ...data.api,
                   upload: {
-                    ...data.config.upload,
+                    ...data.api.upload,
                     url: e.target.value,
                   },
                 },
@@ -568,8 +564,8 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           <InputNumber
             placeholder="输入允许的最大体积"
             value={
-              data.config.upload.max_size
-                ? data.config.upload.max_size / 1024 / 1024
+              data.api.upload.max_size
+                ? data.api.upload.max_size / 1024 / 1024
                 : undefined
             }
             disabled={disabled}
@@ -578,10 +574,10 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
               v &&
               handleChange({
                 ...data,
-                config: {
-                  ...data.config,
+                api: {
+                  ...data.api,
                   upload: {
-                    ...data.config.upload,
+                    ...data.api.upload,
                     max_size: v,
                   },
                 },
@@ -598,10 +594,10 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
             onChange={(values) => {
               handleChange({
                 ...data,
-                config: {
-                  ...data.config,
+                api: {
+                  ...data.api,
                   upload: {
-                    ...data.config.upload,
+                    ...data.api.upload,
                     allowed_formats: values,
                   },
                 },
@@ -617,24 +613,24 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
         <Form.Item label="请求体类型">
           <Radio.Group
-            value={data.config.upload.content_type.type}
+            value={data.api.upload.content_type.type}
             disabled={disabled}
             onChange={(e) => {
               handleChange({
                 ...data,
-                config: {
-                  ...data.config,
+                api: {
+                  ...data.api,
                   upload: {
-                    ...data.config.upload,
+                    ...data.api.upload,
                     content_type:
                       e.target.value === 'JSON'
                         ? {
-                          ...(data.config.upload
+                          ...(data.api.upload
                             .content_type as ApiUploadJsonContentType),
                           type: 'JSON',
                         }
                         : {
-                          ...(data.config.upload
+                          ...(data.api.upload
                             .content_type as ApiUploadMultipartContentType),
                           type: 'MULTIPART',
                         },
@@ -648,24 +644,24 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           </Radio.Group>
         </Form.Item>
 
-        {data.config.upload.content_type.type === 'MULTIPART' ? (
+        {data.api.upload.content_type.type === 'MULTIPART' ? (
           <Space>
             <Form.Item
               label="上传类型"
               tooltip="流式响应支持上传进度，流式上传失败时可尝试更换为 bytes"
             >
               <Radio.Group
-                value={data.config.upload.content_type.file_kind ?? 'STREAM'}
+                value={data.api.upload.content_type.file_kind ?? 'STREAM'}
                 disabled={disabled}
                 onChange={(e) => {
                   handleChange({
                     ...data,
-                    config: {
-                      ...data.config,
+                    api: {
+                      ...data.api,
                       upload: {
-                        ...data.config.upload,
+                        ...data.api.upload,
                         content_type: {
-                          ...(data.config.upload
+                          ...(data.api.upload
                             .content_type as ApiUploadMultipartContentType),
                           file_kind: e.target.value,
                         },
@@ -681,17 +677,17 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
             <Form.Item label="图片的表单键">
               <Input
-                value={data.config.upload.content_type.file_part_name}
+                value={data.api.upload.content_type.file_part_name}
                 disabled={disabled}
                 onChange={(e) => {
                   handleChange({
                     ...data,
-                    config: {
-                      ...data.config,
+                    api: {
+                      ...data.api,
                       upload: {
-                        ...data.config.upload,
+                        ...data.api.upload,
                         content_type: {
-                          ...(data.config.upload
+                          ...(data.api.upload
                             .content_type as ApiUploadMultipartContentType),
                           file_part_name: e.target.value,
                         },
@@ -706,7 +702,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           <>
             {/*TODO: 以后再完善 json 上传*/}
             <Form.Item label="图片数组的表单键">
-              <Input value={data.config.upload.content_type.key} />
+              <Input value={data.api.upload.content_type.key} />
             </Form.Item>
 
             <Form.Item label="除图片之外的其他 json 数据">
@@ -718,17 +714,17 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         <Space>
           <Form.Item label="图片键">
             <Input
-              value={data.config.upload.controller.image_url_key}
+              value={data.api.upload.controller.image_url_key}
               disabled={disabled}
               onChange={(e) => {
                 handleChange({
                   ...data,
-                  config: {
-                    ...data.config,
+                  api: {
+                    ...data.api,
                     upload: {
-                      ...data.config.upload,
+                      ...data.api.upload,
                       controller: {
-                        ...data.config.upload.controller,
+                        ...data.api.upload.controller,
                         image_url_key: e.target.value,
                       },
                     },
@@ -740,17 +736,17 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
           <Form.Item label="删除 id 键">
             <Input
-              value={data.config.upload.controller.deleted_id_key}
+              value={data.api.upload.controller.deleted_id_key}
               disabled={disabled}
               onChange={(e) => {
                 handleChange({
                   ...data,
-                  config: {
-                    ...data.config,
+                  api: {
+                    ...data.api,
                     upload: {
-                      ...data.config.upload,
+                      ...data.api.upload,
                       controller: {
-                        ...data.config.upload.controller,
+                        ...data.api.upload.controller,
                         deleted_id_key: e.target.value,
                       },
                     },
@@ -762,17 +758,17 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
           <Form.Item label="图片缓存键">
             <Input
-              value={data.config.upload.controller.thumb_key}
+              value={data.api.upload.controller.thumb_key}
               disabled={disabled}
               onChange={(e) => {
                 handleChange({
                   ...data,
-                  config: {
-                    ...data.config,
+                  api: {
+                    ...data.api,
                     upload: {
-                      ...data.config.upload,
+                      ...data.api.upload,
                       controller: {
-                        ...data.config.upload.controller,
+                        ...data.api.upload.controller,
                         thumb_key: e.target.value,
                       },
                     },

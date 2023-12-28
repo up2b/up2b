@@ -145,9 +145,9 @@ impl Config {
     //     self.proxy = Some(proxy);
     // }
     //
-    // pub fn auth_config(&self) -> HashMap<ManagerCode, ManagerAuthConfigKind> {
-    //     self.auth_config.clone()
-    // }
+    pub fn auth_config(&self) -> &HashMap<ManagerCode, ManagerAuthConfigKind> {
+        &self.auth_config
+    }
 
     pub fn get_auth_config(&self, manage_code: &ManagerCode) -> Option<&ManagerAuthConfigKind> {
         self.auth_config.get(manage_code)

@@ -54,6 +54,25 @@ async fn using_manager() -> Result<Box<dyn Manage>> {
 }
 
 #[tauri::command]
+async fn get_managers() -> Vec<ManagerItem> {
+    let conf = CONFIG.read().await;
+    let conf = conf.clone();
+
+    let mut managers = MANAGERS.to_vec();
+
+    if let Some(c) = conf {
+        let auth_config = c.auth_config();
+        for key in auth_config.keys() {
+            if let ManagerCode::Custom(_) = key {
+                managers.push(key.clone().to_manager_item());
+            }
+        }
+    }
+
+    managers
+}
+
+#[tauri::command]
 async fn get_all_images() -> Result<Vec<ImageItem>> {
     trace!("获取图片列表");
 
@@ -84,11 +103,6 @@ async fn verify(image_bed: ManagerCode, config: ManagerAuthConfigKind) -> Result
     let uploader = use_manager(&image_bed, &config)?;
 
     uploader.verify().await
-}
-
-#[tauri::command]
-fn get_image_beds() -> &'static [ManagerItem] {
-    MANAGERS.as_ref()
 }
 
 #[tauri::command]
@@ -163,6 +177,11 @@ async fn automatic_compression() -> bool {
         .automatic_compression()
 }
 
+#[tauri::command]
+async fn new_custom_manager(manager_code: ManagerCode, auth_config: ManagerAuthConfigKind) {
+    println!("manager: {} config: {:?}", manager_code, auth_config);
+}
+
 #[tokio::main]
 async fn main() {
     CombinedLogger::init(vec![
@@ -204,7 +223,6 @@ async fn main() {
             get_all_images,
             delete_image,
             upload_image,
-            get_image_beds,
             get_config,
             update_config,
             compress_state,
@@ -214,7 +232,9 @@ async fn main() {
             allowed_formats,
             toggle_manager,
             automatic_compression,
-            smms_config
+            smms_config,
+            get_managers,
+            new_custom_manager,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

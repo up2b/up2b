@@ -59,6 +59,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
     }
 
     getImageBeds().then((r) => {
+      console.log(r)
       setImageBeds(r)
     })
 

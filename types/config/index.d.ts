@@ -57,8 +57,8 @@ type Proxy = HttpProxy | HttpsProxy | Socks5Proxy | Socks5hProxy
 type InferAuthConfigKind<K extends ManagerCode> = K extends APIManagerKey
   ? ApiAuthConfig
   : K extends CheveretoManagerKey
-    ? CheveretoAuthConfig
-    : never
+  ? CheveretoAuthConfig
+  : never
 
 type AuthConfigKinds = {
   [K in ManagerCode]?: InferAuthConfigKind<K>
@@ -78,5 +78,5 @@ interface ManagerItem {
   type: ManagerKind
   name: string
   key: string
-  index: string
+  index?: string
 }

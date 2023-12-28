@@ -5,7 +5,7 @@ pub mod smms;
 use async_trait::async_trait;
 use base64::{engine::general_purpose, Engine as _};
 use reqwest::{header::HeaderMap, Client, Method, RequestBuilder, Response};
-use serde::{Deserialize, Serialize};
+use serde::{de::Visitor, Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display, path::Path};
 use tauri::Window;
@@ -412,21 +412,76 @@ impl BaseManager {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum ManagerKind {
     API,
     Chevereto,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
-#[serde(rename_all = "UPPERCASE")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ManagerCode {
     Smms, // 内置 smms 支持，与 Custom
     Imgse,
     Imgtg,
-    #[serde(rename = "CUSTOM-{0}")]
     Custom(String),
+}
+
+impl Serialize for ManagerCode {
+    fn serialize<S>(&self, serializer: S) -> std::prelude::v1::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            ManagerCode::Smms => serializer.serialize_str("SMMS"),
+            ManagerCode::Imgse => serializer.serialize_str("IMGSE"),
+            ManagerCode::Imgtg => serializer.serialize_str("IMGTG"),
+            ManagerCode::Custom(s) => {
+                serializer.serialize_str(&format!("CUSTOM-{}", s.to_uppercase()))
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for ManagerCode {
+    fn deserialize<D>(deserializer: D) -> std::prelude::v1::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct ManagerCodeVisitor;
+
+        impl<'de> Visitor<'de> for ManagerCodeVisitor {
+            type Value = ManagerCode;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a string representing ManagerCode")
+            }
+
+            fn visit_str<E>(self, value: &str) -> std::prelude::v1::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                if value.starts_with("CUSTOM-") {
+                    // If the value is "CUSTOM", parse it as Custom
+                    let custom_value = value.trim_start_matches("CUSTOM-").to_string();
+                    Ok(ManagerCode::Custom(custom_value))
+                } else {
+                    // Otherwise, convert the value to uppercase and try to match it with enum variants
+                    match value.to_uppercase().as_str() {
+                        "SMMS" => Ok(ManagerCode::Smms),
+                        "IMGSE" => Ok(ManagerCode::Imgse),
+                        "IMGTG" => Ok(ManagerCode::Imgtg),
+                        _ => Err(serde::de::Error::unknown_variant(
+                            value,
+                            &["SMMS", "IMGSE", "IMGTG", "CUSTOM"],
+                        )),
+                    }
+                }
+            }
+        }
+
+        deserializer.deserialize_str(ManagerCodeVisitor)
+    }
 }
 
 impl Display for ManagerCode {
@@ -441,7 +496,7 @@ impl Default for ManagerCode {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ManagerItem {
     pub key: ManagerCode,
     pub name: String,
@@ -455,7 +510,7 @@ impl ManagerCode {
             ManagerCode::Smms => "sm.ms".to_owned(),
             ManagerCode::Imgse => "imgse.com".to_owned(),
             ManagerCode::Imgtg => "imgtg.com".to_owned(),
-            ManagerCode::Custom(s) => s.to_owned(),
+            ManagerCode::Custom(s) => "CUSTOM-".to_owned() + s,
         }
     }
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Button, Form, Input, Modal, Space } from 'antd'
 import ApiSetting from './api'
 import { CheckOutlined } from '@ant-design/icons'
+import { newCustomManager } from '~/lib'
 
 interface AddCustomProps {
   show?: boolean
@@ -16,6 +17,8 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
     checked: boolean
     code: string
   }>({ checked: false, code: '' })
+
+  const [authConfig, setAuthConfig] = useState<ApiAuthConfig | null>(null)
 
   useEffect(() => {
     setCode({ checked: false, code: '' })
@@ -36,7 +39,11 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
           <Button
             key="submit"
             type="primary"
-            onClick={onOk}
+            onClick={() => {
+              console.log(authConfig)
+              newCustomManager('CUSTOM-' + code.code, authConfig!)
+              onOk()
+            }}
             disabled={!code.checked}
           >
             确认
@@ -44,7 +51,12 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
         ]}
       >
         {code.checked ? (
-          <ApiSetting code={code.code} onChange={() => { }} />
+          <ApiSetting
+            code={code.code}
+            onChange={(data) => {
+              setAuthConfig(data)
+            }}
+          />
         ) : (
           <Form>
             <Form.Item
