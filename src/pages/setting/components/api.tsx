@@ -87,7 +87,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
   return (
     <>
-      <Form.Item label="TOKEN">
+      <Form.Item name="token" label="TOKEN" rules={[{ required: true }]}>
         <Input.Password
           placeholder="输入 token"
           value={data.token || ''}
@@ -97,7 +97,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
       <Divider>认证方式</Divider>
 
-      <Form.Item label="token 所在的位置" tooltip="请求体只能是 json 类型">
+      <Form.Item
+        label="token 所在的位置"
+        tooltip="请求体只能是 json 类型"
+        rules={[{ required: true }]}
+      >
         <Radio.Group
           value={data.api.auth_method.type}
           disabled={disabled}
@@ -109,13 +113,13 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
                 auth_method:
                   e.target.value === 'HEADER'
                     ? {
-                      ...(data.api.auth_method as AuthHeaderMethod),
-                      type: 'HEADER',
-                    }
+                        ...(data.api.auth_method as AuthHeaderMethod),
+                        type: 'HEADER',
+                      }
                     : {
-                      ...(data.api.auth_method as AuthBodyMethod),
-                      type: 'BODY',
-                    },
+                        ...(data.api.auth_method as AuthBodyMethod),
+                        type: 'BODY',
+                      },
               },
             })
           }
@@ -170,7 +174,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           </Form.Item>
         </Space>
       ) : (
-        <Form.Item label="key">
+        <Form.Item
+          name={['data', 'api', 'auth_method', 'key']}
+          label="key"
+          rules={[{ required: true }]}
+        >
           <Input
             value={data.api.auth_method.key}
             disabled={disabled}
@@ -192,7 +200,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
       <Divider>图片列表</Divider>
 
-      <Form.Item label="接口">
+      <Form.Item
+        name={['data', 'api', 'list', 'url']}
+        label="接口"
+        rules={[{ required: true }]}
+      >
         <Input
           placeholder="输入图片列表接口"
           value={data.api.list.url}
@@ -209,7 +221,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         />
       </Form.Item>
 
-      <Form.Item label="请求方法">
+      <Form.Item label="请求方法" rules={[{ required: true }]}>
         <Radio.Group
           value={data.api.list.method.type}
           disabled={disabled}
@@ -231,9 +243,13 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         </Radio.Group>
       </Form.Item>
 
-      <Form.Item>
+      <Form.Item name={['data', 'api', 'list', 'controller']}>
         <Space wrap>
-          <Form.Item label="图片数组键">
+          <Form.Item
+            label="图片数组键"
+            name={['data', 'api', 'list', 'controller', 'items_key']}
+            rules={[{ required: true }]}
+          >
             <Input
               placeholder="输入图片数组键名"
               value={data.api.list.controller.items_key}
@@ -256,7 +272,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
             />
           </Form.Item>
 
-          <Form.Item label="图片地址键">
+          <Form.Item
+            label="图片地址键"
+            name={['data', 'api', 'list', 'controller', 'image_url_key']}
+            rules={[{ required: true }]}
+          >
             <Input
               placeholder="输入图片地址键名"
               value={data.api.list.controller.image_url_key}
@@ -279,7 +299,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
             />
           </Form.Item>
 
-          <Form.Item label="图片删除 id 键">
+          <Form.Item
+            label="图片删除 id 键"
+            name={['data', 'api', 'list', 'controller', 'deleted_id_key']}
+            rules={[{ required: true }]}
+          >
             <Input
               placeholder="输入图片删除 id 键名"
               value={data.api.list.controller.deleted_id_key}
@@ -329,7 +353,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
 
       <Divider>删除</Divider>
 
-      <Form.Item label="接口">
+      <Form.Item
+        label="接口"
+        name={['data', 'api', 'delete', 'url']}
+        rules={[{ required: true }]}
+      >
         <Input
           placeholder="输入图片删除接口"
           value={data.api.delete.url}
@@ -363,13 +391,13 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
                   method:
                     e.target.value === 'GET'
                       ? {
-                        type: 'GET',
-                        kind:
-                          (data.api.delete.method as ApiDeleteGetMethod)
-                            .kind ??
-                          (initApiConfig.delete.method as ApiDeleteGetMethod)
-                            .kind,
-                      }
+                          type: 'GET',
+                          kind:
+                            (data.api.delete.method as ApiDeleteGetMethod)
+                              .kind ??
+                            (initApiConfig.delete.method as ApiDeleteGetMethod)
+                              .kind,
+                        }
                       : { type: 'POST' },
                 },
               },
@@ -436,10 +464,10 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
                   ...data.api.delete,
                   controller: v
                     ? {
-                      ...(data.api.delete
-                        .controller as ApiDeleteJsonController),
-                      type: 'JSON',
-                    }
+                        ...(data.api.delete
+                          .controller as ApiDeleteJsonController),
+                        type: 'JSON',
+                      }
                     : { type: 'STATUS' },
                 },
               },
@@ -451,7 +479,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
       {data.api.delete.controller.type === 'JSON' ? (
         <Form.Item>
           <Space>
-            <Form.Item label="成功键">
+            <Form.Item
+              label="成功键"
+              name={['data', 'api', 'delete', 'controller', 'key']}
+              rules={[{ required: true }]}
+            >
               <Input
                 placeholder="删除成功与否的键名"
                 value={data.api.delete.controller.key}
@@ -475,7 +507,12 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
               />
             </Form.Item>
 
-            <Form.Item label="成功的值" tooltip="删除成功时值应该是什么">
+            <Form.Item
+              label="成功的值"
+              tooltip="删除成功时值应该是什么"
+              name={['data', 'api', 'delete', 'controller', 'should_be']}
+              rules={[{ required: true }]}
+            >
               <Input
                 addonBefore={
                   <Select
@@ -510,7 +547,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
               />
             </Form.Item>
 
-            <Form.Item label="失败消息键">
+            <Form.Item
+              label="失败消息键"
+              name={['data', 'api', 'delete', 'controller', 'message_key']}
+              rules={[{ required: true }]}
+            >
               <Input
                 placeholder="删除失败的消息键名"
                 value={data.api.delete.controller.message_key}
@@ -540,7 +581,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
       <Divider>上传</Divider>
 
       <Form.Item>
-        <Form.Item label="接口">
+        <Form.Item
+          label="接口"
+          name={['data', 'api', 'upload', 'url']}
+          rules={[{ required: true }]}
+        >
           <Input
             placeholder="输入上传图片接口"
             value={data.api.upload.url}
@@ -560,7 +605,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           />
         </Form.Item>
 
-        <Form.Item label="最大体积">
+        <Form.Item
+          label="最大体积"
+          name={['data', 'api', 'upload', 'max_size']}
+          rules={[{ required: true }]}
+        >
           <InputNumber
             placeholder="输入允许的最大体积"
             value={
@@ -586,7 +635,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           />
         </Form.Item>
 
-        <Form.Item label="允许的格式">
+        <Form.Item
+          label="允许的格式"
+          name={['data', 'api', 'upload', 'allowed_formats']}
+          rules={[{ required: true }]}
+        >
           <Select
             mode="multiple"
             placeholder="选择图片格式"
@@ -625,15 +678,15 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
                     content_type:
                       e.target.value === 'JSON'
                         ? {
-                          ...(data.api.upload
-                            .content_type as ApiUploadJsonContentType),
-                          type: 'JSON',
-                        }
+                            ...(data.api.upload
+                              .content_type as ApiUploadJsonContentType),
+                            type: 'JSON',
+                          }
                         : {
-                          ...(data.api.upload
-                            .content_type as ApiUploadMultipartContentType),
-                          type: 'MULTIPART',
-                        },
+                            ...(data.api.upload
+                              .content_type as ApiUploadMultipartContentType),
+                            type: 'MULTIPART',
+                          },
                   },
                 },
               })
@@ -675,7 +728,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
               </Radio.Group>
             </Form.Item>
 
-            <Form.Item label="图片的表单键">
+            <Form.Item
+              label="图片的表单键"
+              name={['data', 'api', 'upload', 'content_type', 'file_part_name']}
+              rules={[{ required: true }]}
+            >
               <Input
                 value={data.api.upload.content_type.file_part_name}
                 disabled={disabled}
@@ -701,7 +758,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         ) : (
           <>
             {/*TODO: 以后再完善 json 上传*/}
-            <Form.Item label="图片数组的表单键">
+            <Form.Item
+              label="图片数组的表单键"
+              name={['data', 'api', 'upload', 'content_type', 'key']}
+              rules={[{ required: true }]}
+            >
               <Input value={data.api.upload.content_type.key} />
             </Form.Item>
 
@@ -712,7 +773,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         )}
 
         <Space>
-          <Form.Item label="图片键">
+          <Form.Item
+            label="图片键"
+            name={['data', 'api', 'upload', 'controller', 'image_url_key']}
+            rules={[{ required: true }]}
+          >
             <Input
               value={data.api.upload.controller.image_url_key}
               disabled={disabled}
@@ -734,7 +799,11 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
             />
           </Form.Item>
 
-          <Form.Item label="删除 id 键">
+          <Form.Item
+            label="删除 id 键"
+            name={['data', 'api', 'upload', 'controller', 'deleted_id_key']}
+            rules={[{ required: true }]}
+          >
             <Input
               value={data.api.upload.controller.deleted_id_key}
               disabled={disabled}

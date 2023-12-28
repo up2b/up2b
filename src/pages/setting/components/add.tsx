@@ -13,6 +13,8 @@ interface AddCustomProps {
 const CODE_REGEX = /^\w+$/
 
 const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
+  const [form] = Form.useForm()
+
   const [code, setCode] = useState<{
     checked: boolean
     code: string
@@ -24,6 +26,14 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
     setCode({ checked: false, code: '' })
   }, [show])
 
+  const disableOkButton =
+    !authConfig ||
+    authConfig?.token.length === 0 ||
+    (authConfig.api.auth_method.type === 'BODY' &&
+      (!authConfig.api.auth_method.key ||
+        authConfig.api.auth_method.key.length === 0)) ||
+    authConfig.api.list.url.length === 0
+
   return (
     <div>
       <Modal
@@ -32,31 +42,43 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
         open={show}
         onCancel={onCancel}
         maskClosable={false}
-        footer={[
-          <Button key="cancel" type="default" onClick={onCancel}>
-            取消
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            onClick={() => {
-              console.log(authConfig)
-              newCustomManager('CUSTOM-' + code.code, authConfig!)
-              onOk()
-            }}
-            disabled={!code.checked}
-          >
-            确认
-          </Button>,
-        ]}
+        footer={
+          code.checked
+            ? []
+            : [
+                <Button key="cancel" type="default" onClick={onCancel}>
+                  取消
+                </Button>,
+              ]
+        }
       >
         {code.checked ? (
-          <ApiSetting
-            code={code.code}
-            onChange={(data) => {
-              setAuthConfig(data)
-            }}
-          />
+          <Form form={form}>
+            <ApiSetting
+              code={code.code}
+              onChange={(data) => {
+                setAuthConfig(data)
+              }}
+            />
+
+            <Button key="cancel" type="default" onClick={onCancel}>
+              取消
+            </Button>
+            <Button
+              key="submit"
+              type="primary"
+              htmlType="submit"
+              onClick={() => {
+                form.validateFields()
+
+                // console.log(authConfig)
+                // newCustomManager('CUSTOM-' + code.code, authConfig!)
+                onOk()
+              }}
+            >
+              确认
+            </Button>
+          </Form>
         ) : (
           <Form>
             <Form.Item
