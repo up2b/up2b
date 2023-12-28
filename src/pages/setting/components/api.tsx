@@ -175,25 +175,22 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
         </Space>
       ) : (
         <Form.Item label="key">
-          {' '}
-          <Form.Item label="key">
-            <Input
-              value={data.config.auth_method.key}
-              disabled={disabled}
-              onChange={(e) =>
-                handleChange({
-                  ...data,
-                  config: {
-                    ...data.config,
-                    auth_method: {
-                      ...(data.config.auth_method as AuthHeaderMethod),
-                      key: e.target.value,
-                    },
+          <Input
+            value={data.config.auth_method.key}
+            disabled={disabled}
+            onChange={(e) =>
+              handleChange({
+                ...data,
+                config: {
+                  ...data.config,
+                  auth_method: {
+                    ...(data.config.auth_method as AuthHeaderMethod),
+                    key: e.target.value,
                   },
-                })
-              }
-            />
-          </Form.Item>
+                },
+              })
+            }
+          />
         </Form.Item>
       )}
 
@@ -217,25 +214,25 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
       </Form.Item>
 
       <Form.Item label="请求方法">
-        <Select
+        <Radio.Group
           value={data.config.list.method.type}
           disabled={disabled}
-          onChange={(value) =>
+          onChange={(e) =>
             handleChange({
               ...data,
               config: {
                 ...data.config,
                 list: {
                   ...data.config.list,
-                  method: { ...data.config.list.method, type: value },
+                  method: { ...data.config.list.method, type: e.target.value },
                 },
               },
             })
           }
         >
-          <Select.Option value="GET">GET</Select.Option>
-          <Select.Option value="POST">POST</Select.Option>
-        </Select>
+          <Radio value="GET">GET</Radio>
+          <Radio value="POST">POST</Radio>
+        </Radio.Group>
       </Form.Item>
 
       <Form.Item>
@@ -357,7 +354,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
       </Form.Item>
 
       <Form.Item label="请求方法">
-        <Select
+        <Radio.Group
           value={data.config.delete.method.type}
           disabled={disabled}
           onChange={(e) =>
@@ -368,10 +365,14 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
                 delete: {
                   ...data.config.delete,
                   method:
-                    e === 'GET'
+                    e.target.value === 'GET'
                       ? {
-                        ...(data.config.delete.method as ApiDeleteGetMethod),
                         type: 'GET',
+                        kind:
+                          (data.config.delete.method as ApiDeleteGetMethod)
+                            .kind ??
+                          (initApiConfig.delete.method as ApiDeleteGetMethod)
+                            .kind,
                       }
                       : { type: 'POST' },
                 },
@@ -379,10 +380,49 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
             })
           }
         >
-          <Select.Option value="GET">GET</Select.Option>
-          <Select.Option value="POST">POST</Select.Option>
-        </Select>
+          <Radio value="GET">GET</Radio>
+          <Radio value="POST">POST</Radio>
+        </Radio.Group>
       </Form.Item>
+
+      {data.config.delete.method.type === 'GET' ? (
+        <>
+          <Form.Item label="删除 id 所在位置">
+            <Radio.Group
+              disabled={disabled}
+              value={data.config.delete.method.kind.type ?? 'PATH'}
+              onChange={(e) =>
+                handleChange({
+                  ...data,
+                  config: {
+                    ...data.config,
+                    delete: {
+                      ...data.config.delete,
+                      method: {
+                        ...(data.config.delete.method as ApiDeleteGetMethod),
+                        kind: {
+                          ...(data.config.delete.method as ApiDeleteGetMethod)
+                            .kind,
+                          type: e.target.value,
+                        },
+                      },
+                    },
+                  },
+                })
+              }
+            >
+              <Radio value="PATH">路径</Radio>
+              <Radio value="QUERY">查询参数</Radio>
+            </Radio.Group>
+          </Form.Item>
+
+          {data.config.delete.method.kind.type === 'QUERY' ? (
+            <Form.Item label="key">
+              <Input />
+            </Form.Item>
+          ) : null}
+        </>
+      ) : null}
 
       <Form.Item
         label="是否有响应体"

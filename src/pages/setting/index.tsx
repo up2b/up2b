@@ -9,7 +9,6 @@ import {
   Button,
   message,
   Tooltip,
-  Modal,
 } from 'antd'
 import { getVersion } from '@tauri-apps/api/app'
 import {
