@@ -17,7 +17,7 @@ interface Data {
 }
 
 interface ApiSettingProps {
-  code: ManagerCode
+  code: string
   token?: string
   config?: ApiConfig
   onChange: (data: Data) => void
@@ -113,13 +113,13 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
                 auth_method:
                   e.target.value === 'HEADER'
                     ? {
-                        ...(data.config.auth_method as AuthHeaderMethod),
-                        type: 'HEADER',
-                      }
+                      ...(data.config.auth_method as AuthHeaderMethod),
+                      type: 'HEADER',
+                    }
                     : {
-                        ...(data.config.auth_method as AuthBodyMethod),
-                        type: 'BODY',
-                      },
+                      ...(data.config.auth_method as AuthBodyMethod),
+                      type: 'BODY',
+                    },
               },
             })
           }
@@ -370,9 +370,9 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
                   method:
                     e === 'GET'
                       ? {
-                          ...(data.config.delete.method as ApiDeleteGetMethod),
-                          type: 'GET',
-                        }
+                        ...(data.config.delete.method as ApiDeleteGetMethod),
+                        type: 'GET',
+                      }
                       : { type: 'POST' },
                 },
               },
@@ -400,10 +400,10 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
                   ...data.config.delete,
                   controller: v
                     ? {
-                        ...(data.config.delete
-                          .controller as ApiDeleteJsonController),
-                        type: 'JSON',
-                      }
+                      ...(data.config.delete
+                        .controller as ApiDeleteJsonController),
+                      type: 'JSON',
+                    }
                     : { type: 'STATUS' },
                 },
               },
@@ -589,15 +589,15 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
                     content_type:
                       e.target.value === 'JSON'
                         ? {
-                            ...(data.config.upload
-                              .content_type as ApiUploadJsonContentType),
-                            type: 'JSON',
-                          }
+                          ...(data.config.upload
+                            .content_type as ApiUploadJsonContentType),
+                          type: 'JSON',
+                        }
                         : {
-                            ...(data.config.upload
-                              .content_type as ApiUploadMultipartContentType),
-                            type: 'MULTIPART',
-                          },
+                          ...(data.config.upload
+                            .content_type as ApiUploadMultipartContentType),
+                          type: 'MULTIPART',
+                        },
                   },
                 },
               })

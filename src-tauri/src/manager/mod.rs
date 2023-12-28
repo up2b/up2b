@@ -146,7 +146,7 @@ pub fn use_manager(
                     api.max_size(),
                     api.allowed_formats().to_vec(),
                     #[cfg(feature = "compress")]
-                    api.compressed_format(),
+                    api.compressed_format().clone(),
                 );
                 let custom = BaseApiManager::new(manager, token, api);
 
@@ -425,6 +425,7 @@ pub enum ManagerCode {
     Smms, // 内置 smms 支持，与 Custom
     Imgse,
     Imgtg,
+    #[serde(rename = "CUSTOM-{0}")]
     Custom(String),
 }
 

@@ -8,6 +8,8 @@ import {
   Switch,
   Button,
   message,
+  Tooltip,
+  Modal,
 } from 'antd'
 import { getVersion } from '@tauri-apps/api/app'
 import {
@@ -22,6 +24,8 @@ import ApiSetting from './components/api.tsx'
 import ProxySetting from './proxy'
 import './index.scss'
 import { open } from '@tauri-apps/api/shell'
+import { PlusOutlined } from '@ant-design/icons'
+import AddCustom from './components/add.tsx'
 
 const { Option } = Select
 
@@ -44,6 +48,8 @@ const Setting = ({ config, setConfig }: SettingProps) => {
   const [version, setVersion] = useState<string | null>(null)
 
   const [index, setIndex] = useState<string | undefined>(undefined)
+
+  const [showAddCustom, setShowAddCustom] = useState(false)
 
   useEffect(() => {
     if (!config) {
@@ -264,18 +270,31 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                     pre
                       ? { ...pre, using: v }
                       : {
-                          using: v,
-                          use_proxy: false,
-                          automatic_compression: false,
-                          auth_config: {
-                            [v]: {
-                              type: imageBeds.find((item) => item.key === v)
-                                ?.type,
-                            },
+                        using: v,
+                        use_proxy: false,
+                        automatic_compression: false,
+                        auth_config: {
+                          [v]: {
+                            type: imageBeds.find((item) => item.key === v)
+                              ?.type,
                           },
                         },
+                      },
                   )
                 }
+                dropdownRender={(menu) => (
+                  <>
+                    {menu}
+                    <Tooltip placement="right" title="添加自定义 api 图床">
+                      <Button
+                        block
+                        type="text"
+                        icon={<PlusOutlined />}
+                        onClick={() => setShowAddCustom((pre) => !pre)}
+                      ></Button>
+                    </Tooltip>
+                  </>
+                )}
               >
                 {imageBeds.map((item) => (
                   <Option key={item.key} value={item.key}>
@@ -313,17 +332,17 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                 disabled={
                   (filterImageBed()?.type === 'API'
                     ? !(config?.auth_config?.[config.using] as ApiAuthConfig)
-                        ?.token
+                      ?.token
                     : !(
-                        config?.auth_config?.[
-                          config.using
-                        ] as CheveretoAuthConfig
-                      )?.username ||
-                      !(
-                        config?.auth_config?.[
-                          config.using
-                        ] as CheveretoAuthConfig
-                      )?.password) || areObjectsEqual(defaultConfig, config)
+                      config?.auth_config?.[
+                      config.using
+                      ] as CheveretoAuthConfig
+                    )?.username ||
+                    !(
+                      config?.auth_config?.[
+                      config.using
+                      ] as CheveretoAuthConfig
+                    )?.password) || areObjectsEqual(defaultConfig, config)
                 }
               >
                 {verifying ? '验证中...' : '保存'}
@@ -333,7 +352,11 @@ const Setting = ({ config, setConfig }: SettingProps) => {
         </Form>
       ) : null}
 
-      <div id="version">v{version}</div>
+      <AddCustom
+        show={showAddCustom}
+        onOk={() => { }}
+        onCancel={() => setShowAddCustom(false)}
+      />
     </div>
   )
 }
