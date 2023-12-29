@@ -117,3 +117,9 @@ interface ApiUploadConfig {
   content_type: ApiUploadContentType
   controller: ApiUploadController
 }
+
+type ApiDeleteControllerForm = {
+  [K in keyof ApiDeleteController]: K extends 'type'
+  ? string | boolean
+  : ApiDeleteController[K]
+}

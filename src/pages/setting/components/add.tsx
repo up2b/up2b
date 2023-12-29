@@ -2,20 +2,15 @@ import React, { useEffect, useState } from 'react'
 import { Button, Form, Input, Modal, Space } from 'antd'
 import ApiSetting, { initApiConfig } from './api'
 import { CheckOutlined } from '@ant-design/icons'
-// import { newCustomManager } from '~/lib'
+import { newCustomManager } from '~/lib'
 
 interface ApiSettingFormProps {
   code: string
-  setAuthConfig: (data: ApiAuthConfig) => void
-  okOk: () => void
+  onSubmit: (data: ApiAuthConfig) => void
   onCancel: () => void
 }
 
-const ApiSettingForm = ({
-  code,
-  setAuthConfig,
-  onCancel,
-}: ApiSettingFormProps) => {
+const ApiSettingForm = ({ code, onSubmit, onCancel }: ApiSettingFormProps) => {
   const [form] = Form.useForm()
 
   return (
@@ -24,17 +19,11 @@ const ApiSettingForm = ({
       initialValues={initApiConfig}
       onFinish={(values) => {
         const apiAuthConfig = { type: 'API', ...values }
-        setAuthConfig(apiAuthConfig)
+        onSubmit(apiAuthConfig)
       }}
       onFinishFailed={(e) => console.log(e)}
     >
-      <ApiSetting
-        code={code}
-        onChange={(data) => {
-          console.log(data)
-          // setAuthConfig(data)
-        }}
-      />
+      <ApiSetting code={code} />
 
       <Button
         key="cancel"
@@ -81,8 +70,6 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
     code: string
   }>({ checked: false, code: '' })
 
-  const [authConfig, setAuthConfig] = useState<ApiAuthConfig | null>(null)
-
   useEffect(() => {
     setCode({ checked: false, code: '' })
   }, [show])
@@ -94,8 +81,6 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
   //     (!authConfig.api.auth_method.key ||
   //       authConfig.api.auth_method.key.length === 0)) ||
   //   authConfig.api.list.url.length === 0
-
-  console.log(authConfig)
 
   return (
     <div>
@@ -118,9 +103,21 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
         {code.checked ? (
           <ApiSettingForm
             code={code.code}
-            setAuthConfig={setAuthConfig}
             onCancel={onCancel}
-            okOk={onOk}
+            onSubmit={(data) => {
+              console.log(initApiConfig)
+              console.log(data)
+              if (
+                (data.api.delete.controller as ApiDeleteControllerForm).type
+              ) {
+                data.api.delete.controller.type = 'JSON'
+              } else {
+                data.api.delete.controller.type = 'STATUS'
+              }
+              newCustomManager('CUSTOM-' + code.code, data)
+
+              onOk()
+            }}
           />
         ) : (
           <Form>

@@ -19,7 +19,7 @@ import {
   updateConfig,
   verify,
 } from '~/lib'
-import ApiSetting from './components/api.tsx'
+import ApiSetting from './components/api/index.tsx'
 import ProxySetting from './proxy'
 import './index.scss'
 import { open } from '@tauri-apps/api/shell'
@@ -270,16 +270,16 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                     pre
                       ? { ...pre, using: v }
                       : {
-                          using: v,
-                          use_proxy: false,
-                          automatic_compression: false,
-                          auth_config: {
-                            [v]: {
-                              type: imageBeds.find((item) => item.key === v)
-                                ?.type,
-                            },
+                        using: v,
+                        use_proxy: false,
+                        automatic_compression: false,
+                        auth_config: {
+                          [v]: {
+                            type: imageBeds.find((item) => item.key === v)
+                              ?.type,
                           },
                         },
+                      },
                   )
                 }
                 dropdownRender={(menu) => (
@@ -332,17 +332,17 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                 disabled={
                   (filterImageBed()?.type === 'API'
                     ? !(config?.auth_config?.[config.using] as ApiAuthConfig)
-                        ?.token
+                      ?.token
                     : !(
-                        config?.auth_config?.[
-                          config.using
-                        ] as CheveretoAuthConfig
-                      )?.username ||
-                      !(
-                        config?.auth_config?.[
-                          config.using
-                        ] as CheveretoAuthConfig
-                      )?.password) || areObjectsEqual(defaultConfig, config)
+                      config?.auth_config?.[
+                      config.using
+                      ] as CheveretoAuthConfig
+                    )?.username ||
+                    !(
+                      config?.auth_config?.[
+                      config.using
+                      ] as CheveretoAuthConfig
+                    )?.password) || areObjectsEqual(defaultConfig, config)
                 }
               >
                 {verifying ? '验证中...' : '保存'}
@@ -354,7 +354,10 @@ const Setting = ({ config, setConfig }: SettingProps) => {
 
       <AddCustom
         show={showAddCustom}
-        onOk={() => {}}
+        onOk={() => {
+          // TODO: 切换到自定义图床
+          setShowAddCustom(false)
+        }}
         onCancel={() => setShowAddCustom(false)}
       />
     </div>
