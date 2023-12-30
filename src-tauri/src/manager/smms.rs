@@ -22,7 +22,7 @@ use super::{
 lazy_static! {
     pub static ref SMMS_API: Api = {
         let upload = Upload::new(
-            "https://smms.app/api/v2/upload",
+            "/upload",
             5 * 1024 * 1024,
             vec![
                 AllowedImageFormat::Jpeg,
@@ -43,13 +43,13 @@ lazy_static! {
         );
 
         let list = List::new(
-            "https://smms.app/api/v2/upload_history",
+            "/upload_history",
             ListResponseController::new("data", "url", "hash", None),
             ListRequestMethod::Get,
         );
 
         let delete = Delete::new(
-            "https://smms.app/api/v2/delete/",
+            "/delete/",
             DeleteMethod::Get {
                 kind: DeleteGetKind::Path,
             },
@@ -65,7 +65,13 @@ lazy_static! {
             prefix: None,
         };
 
-        Api::new(auth_method, upload, list, delete)
+        Api::new(
+            "https://smms.app/api/v2/",
+            auth_method,
+            upload,
+            list,
+            delete,
+        )
     };
 }
 

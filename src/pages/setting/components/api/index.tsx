@@ -18,11 +18,12 @@ export const initApiConfig: ApiAuthConfig = {
   type: 'API',
   token: '',
   api: {
+    base_url: '',
     auth_method: {
       type: 'HEADER',
     },
     list: {
-      url: '',
+      path: '',
       method: { type: 'GET' },
       controller: {
         items_key: '',
@@ -31,12 +32,12 @@ export const initApiConfig: ApiAuthConfig = {
       },
     },
     delete: {
-      url: '',
+      path: '',
       method: { type: 'GET', kind: { type: 'PATH' } },
       controller: { type: 'JSON', key: '', should_be: true },
     },
     upload: {
-      url: '',
+      path: '',
       max_size: 0,
       timeout: 0,
       allowed_formats: ['PNG', 'JPEG', 'GIF'],
@@ -79,7 +80,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
   const rules: FormRule[] = [{ required: true }]
   const urlRules: FormRule[] = [...rules, { type: 'url', warningOnly: true }]
 
-  console.log(data.api.delete)
+  console.log(data)
 
   return (
     <>
@@ -88,6 +89,25 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
           placeholder="输入 token"
           value={data.token || ''}
           onChange={(e) => handleChange({ ...data, token: e.target.value })}
+        />
+      </Form.Item>
+
+      <Form.Item
+        name="base_url"
+        label="接口"
+        rules={urlRules}
+        initialValue={data.api.base_url}
+      >
+        <Input
+          placeholder="输入接口"
+          disabled={disabled}
+          // value={data.api.base_url}
+          onChange={(e) =>
+            handleChange({
+              ...data,
+              api: { ...data.api, base_url: e.target.value },
+            })
+          }
         />
       </Form.Item>
 

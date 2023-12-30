@@ -19,19 +19,21 @@ const ImageList = ({
 }: ImageListProps) => {
   const name = (...key: string[]) => ['api', 'list', ...key]
 
+  const { path, method, controller } = data.api.list
+
   return (
     <>
-      <Form.Item name={name('url')} label="接口" rules={urlRules}>
+      <Form.Item name={name('path')} label="路径" rules={urlRules}>
         <Input
-          placeholder="输入图片列表接口"
-          value={data.api.list.url}
+          placeholder="输入图片列表接口路径"
+          value={path}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
               ...data,
               api: {
                 ...data.api,
-                list: { ...data.api.list, url: e.target.value },
+                list: { ...data.api.list, path: e.target.value },
               },
             })
           }
@@ -40,7 +42,7 @@ const ImageList = ({
 
       <Form.Item name={name('method', 'type')} label="请求方法" rules={rules}>
         <Radio.Group
-          value={data.api.list.method.type}
+          value={method.type}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
@@ -49,7 +51,7 @@ const ImageList = ({
                 ...data.api,
                 list: {
                   ...data.api.list,
-                  method: { ...data.api.list.method, type: e.target.value },
+                  method: { ...method, type: e.target.value },
                 },
               },
             })
@@ -68,7 +70,7 @@ const ImageList = ({
         >
           <Input
             placeholder="输入图片数组键名"
-            value={data.api.list.controller.items_key}
+            value={controller.items_key}
             disabled={disabled}
             onChange={(e) =>
               handleChange({
@@ -78,7 +80,7 @@ const ImageList = ({
                   list: {
                     ...data.api.list,
                     controller: {
-                      ...data.api.list.controller,
+                      ...controller,
                       items_key: e.target.value,
                     },
                   },
@@ -95,7 +97,7 @@ const ImageList = ({
         >
           <Input
             placeholder="输入图片地址键名"
-            value={data.api.list.controller.image_url_key}
+            value={controller.image_url_key}
             disabled={disabled}
             onChange={(e) =>
               handleChange({
@@ -105,7 +107,7 @@ const ImageList = ({
                   list: {
                     ...data.api.list,
                     controller: {
-                      ...data.api.list.controller,
+                      ...controller,
                       image_url_key: e.target.value,
                     },
                   },
@@ -122,7 +124,7 @@ const ImageList = ({
         >
           <Input
             placeholder="输入图片删除 id 键名"
-            value={data.api.list.controller.deleted_id_key}
+            value={controller.deleted_id_key}
             disabled={disabled}
             onChange={(e) =>
               handleChange({
@@ -132,7 +134,7 @@ const ImageList = ({
                   list: {
                     ...data.api.list,
                     controller: {
-                      ...data.api.list.controller,
+                      ...controller,
                       deleted_id_key: e.target.value,
                     },
                   },
@@ -145,7 +147,7 @@ const ImageList = ({
         <Form.Item name={name('controller', 'thumb_key')} label="图片缓存键">
           <Input
             placeholder="输入图片缓存键名"
-            value={data.api.list.controller.thumb_key}
+            value={controller.thumb_key}
             disabled={disabled}
             onChange={(e) =>
               handleChange({
@@ -155,7 +157,7 @@ const ImageList = ({
                   list: {
                     ...data.api.list,
                     controller: {
-                      ...data.api.list.controller,
+                      ...controller,
                       thumb_key: e.target.value,
                     },
                   },

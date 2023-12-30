@@ -18,6 +18,7 @@ interface ApiAuthConfig {
 }
 
 interface ApiConfig {
+  base_url: string
   auth_method: AuthMethod
   list: ApiListConfig
   delete: ApiDeleteConfig
@@ -41,7 +42,7 @@ interface ApiListController {
 }
 
 interface ApiListConfig {
-  url: string
+  path: string
   method: ApiListGetMethod | ApiListPostMethod
   controller: ApiListController
 }
@@ -70,7 +71,7 @@ interface ApiDeleteJsonController {
   type: 'JSON'
   key: string
   message_key?: string
-  should_be: any
+  should_be: string | number | boolean
 }
 
 interface ApiDeleteStatusController {
@@ -80,7 +81,7 @@ interface ApiDeleteStatusController {
 type ApiDeleteController = ApiDeleteJsonController | ApiDeleteStatusController
 
 interface ApiDeleteConfig {
-  url: string
+  path: string
   method: ApiDeleteMethod
   controller: ApiDeleteController
 }
@@ -110,7 +111,7 @@ interface ApiUploadController {
 }
 
 interface ApiUploadConfig {
-  url: string
+  path: string
   max_size: number
   timeout: number
   allowed_formats: string[]

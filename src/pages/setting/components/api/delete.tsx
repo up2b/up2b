@@ -57,14 +57,14 @@ const Delete = ({
 }: DeleteProps) => {
   const name = (...key: string[]) => ['api', 'delete', ...key]
 
-  const { url, method, controller } = data.api.delete
+  const { path, method, controller } = data.api.delete
 
   return (
     <>
-      <Form.Item label="接口" name={name('url')} rules={urlRules}>
+      <Form.Item label="路径" name={name('path')} rules={urlRules}>
         <Input
-          placeholder="输入图片删除接口"
-          value={url}
+          placeholder="输入图片删除接口路径"
+          value={path}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
@@ -73,7 +73,7 @@ const Delete = ({
                 ...data.api,
                 delete: {
                   ...data.api.delete,
-                  url: e.target.value,
+                  path: e.target.value,
                 },
               },
             })
@@ -95,11 +95,11 @@ const Delete = ({
                   method:
                     e.target.value === 'GET'
                       ? {
-                          type: 'GET',
-                          kind: (method as ApiDeleteGetMethod).kind ?? {
-                            type: 'PATH',
-                          },
-                        }
+                        type: 'GET',
+                        kind: (method as ApiDeleteGetMethod).kind ?? {
+                          type: 'PATH',
+                        },
+                      }
                       : { type: 'POST' },
                 },
               },
@@ -170,9 +170,9 @@ const Delete = ({
                   ...data.api.delete,
                   controller: v
                     ? {
-                        ...(controller as ApiDeleteJsonController),
-                        type: 'JSON',
-                      }
+                      ...(controller as ApiDeleteJsonController),
+                      type: 'JSON',
+                    }
                     : { type: 'STATUS' },
                 },
               },

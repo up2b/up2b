@@ -62,6 +62,9 @@ pub enum Error {
 
     #[error("connection closed before message completed. Should retry.")]
     ConnectionClosedBeforeMessageCompleted,
+
+    #[error("{} 已存在", .0.name())]
+    CustomUnique(ManagerCode),
 }
 
 impl Error {

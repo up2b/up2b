@@ -106,7 +106,7 @@ impl UploadResponseController {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Upload {
-    url: String,
+    path: String,
     max_size: u64,
     allowed_formats: Vec<AllowedImageFormat>,
     #[cfg(feature = "compress")]
@@ -131,7 +131,7 @@ impl Upload {
     ) -> Self {
         let secs: Option<u64> = timeout.into();
         Self {
-            url: url.into(),
+            path: url.into(),
             max_size,
             allowed_formats,
             #[cfg(feature = "compress")]
@@ -153,7 +153,7 @@ pub enum ListRequestMethod {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct List {
-    url: String,
+    path: String,
     controller: ListResponseController,
     method: ListRequestMethod,
 }
@@ -161,7 +161,7 @@ pub struct List {
 impl List {
     pub fn new(url: &str, controller: ListResponseController, method: ListRequestMethod) -> Self {
         Self {
-            url: url.to_owned(),
+            path: url.to_owned(),
             controller,
             method,
         }
@@ -315,7 +315,7 @@ impl DeleteResponseController {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Delete {
-    url: String,
+    path: String,
     method: DeleteMethod,
     controller: DeleteResponseController,
 }
@@ -323,7 +323,7 @@ pub struct Delete {
 impl Delete {
     pub fn new(url: &str, method: DeleteMethod, controller: DeleteResponseController) -> Self {
         Self {
-            url: url.to_owned(),
+            path: url.to_owned(),
             method,
             controller,
         }
@@ -332,6 +332,7 @@ impl Delete {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Api {
+    base_url: String,
     auth_method: AuthMethod,
     upload: Upload,
     list: List,
@@ -339,8 +340,15 @@ pub struct Api {
 }
 
 impl Api {
-    pub fn new(auth_method: AuthMethod, upload: Upload, list: List, delete: Delete) -> Self {
+    pub fn new<S: Into<String>>(
+        base_url: S,
+        auth_method: AuthMethod,
+        upload: Upload,
+        list: List,
+        delete: Delete,
+    ) -> Self {
         Self {
+            base_url: base_url.into(),
             auth_method,
             upload,
             list,
@@ -382,6 +390,10 @@ impl BaseApiManager {
         self.api.upload.allowed_formats.clone()
     }
 
+    pub fn url(&self, path: &str) -> String {
+        self.api.base_url.to_owned() + path
+    }
+
     fn headers(&self) -> Result<HeaderMap> {
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, "application/json".parse().unwrap());
@@ -403,7 +415,11 @@ impl BaseApiManager {
 
     pub async fn list(&self) -> Result<Vec<ImageItem>> {
         let response = match &self.api.list.method {
-            ListRequestMethod::Get => self.inner.get(&self.api.list.url, self.headers()?).await?,
+            ListRequestMethod::Get => {
+                self.inner
+                    .get(&self.url(&self.api.list.path), self.headers()?)
+                    .await?
+            }
             ListRequestMethod::Post { body } => {
                 let mut body = body.clone();
                 let headers = self.headers()?;
@@ -413,7 +429,7 @@ impl BaseApiManager {
                 }
 
                 self.inner
-                    .request(Method::POST, &self.api.list.url, headers)
+                    .request(Method::POST, &self.api.list.path, headers)
                     .json(&body)
                     .send()
                     .await?
@@ -426,8 +442,11 @@ impl BaseApiManager {
     async fn delete_by_get(&self, kind: &DeleteGetKind, id: &str) -> Result<Response> {
         // GET 删除认证方式只能是 headers
         let url = match kind {
-            DeleteGetKind::Path => self.api.delete.url.to_owned() + id,
-            DeleteGetKind::Query { key } => format!("{}?{}={}", self.api.delete.url, key, id),
+            DeleteGetKind::Path => self.url(&(self.api.delete.path.to_owned() + id)),
+            DeleteGetKind::Query { key } => format!(
+                "{}{}?{}={}",
+                self.api.base_url, self.api.delete.path, key, id
+            ),
         };
 
         self.inner.get(&url, self.headers()?).await
@@ -448,7 +467,7 @@ impl BaseApiManager {
         }
 
         self.inner
-            .json(&self.api.delete.url, self.headers()?, body)
+            .json(&self.url(&self.api.delete.path), self.headers()?, body)
             .await
     }
 
@@ -476,7 +495,7 @@ impl BaseApiManager {
                     .upload_json(
                         window,
                         id,
-                        &self.api.upload.url,
+                        &self.url(&self.api.upload.path),
                         headers,
                         key,
                         image_path,
@@ -493,7 +512,7 @@ impl BaseApiManager {
                     .upload_multipart(
                         window,
                         id,
-                        &self.api.upload.url,
+                        &self.url(&self.api.upload.path),
                         headers,
                         image_path,
                         &file_part_name,

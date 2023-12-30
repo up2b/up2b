@@ -21,16 +21,19 @@ const Upload = ({
 }: UploadProps) => {
   const name = (...key: string[]) => ['api', 'upload', ...key]
 
+  const { path, max_size, timeout, allowed_formats, content_type, controller } =
+    data.api.upload
+
   const filteredFormats = ALLOWED_FORMATS.filter(
-    (o) => !data.api.upload.allowed_formats.includes(o),
+    (o) => !allowed_formats.includes(o),
   )
 
   return (
     <>
-      <Form.Item label="接口" name={name('url')} rules={urlRules}>
+      <Form.Item label="路径" name={name('path')} rules={urlRules}>
         <Input
-          placeholder="输入上传图片接口"
-          value={data.api.upload.url}
+          placeholder="输入上传图片接口路径"
+          value={path}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
@@ -39,7 +42,7 @@ const Upload = ({
                 ...data.api,
                 upload: {
                   ...data.api.upload,
-                  url: e.target.value,
+                  path: e.target.value,
                 },
               },
             })
@@ -50,11 +53,7 @@ const Upload = ({
       <Form.Item label="最大体积" name={name('max_size')} rules={rules}>
         <InputNumber
           placeholder="输入允许的最大体积"
-          value={
-            data.api.upload.max_size
-              ? data.api.upload.max_size / 1024 / 1024
-              : undefined
-          }
+          value={max_size ? max_size / 1024 / 1024 : undefined}
           disabled={disabled}
           addonAfter="MB"
           onChange={(v) =>
@@ -74,20 +73,33 @@ const Upload = ({
       </Form.Item>
 
       <Form.Item label="超时时间" name={name('timeout')}>
-        <InputNumber min={0} addonAfter="秒" />
+        <InputNumber
+          disabled={disabled}
+          min={0}
+          value={timeout}
+          addonAfter="秒"
+          onChange={(v) =>
+            handleChange({
+              ...data,
+              api: {
+                ...data.api,
+                upload: { ...data.api.upload, timeout: v ?? 5 },
+              },
+            })
+          }
+        />
       </Form.Item>
 
       <Form.Item
         label="允许的格式"
         name={name('allowed_formats')}
-        // initialValue={['PNG', 'JPEG', 'GIF']}
         rules={rules}
       >
         <Select
           mode="multiple"
           allowClear
           placeholder="选择图片格式"
-          value={data.api.upload.allowed_formats}
+          value={allowed_formats}
           onChange={(values) => {
             handleChange({
               ...data,
@@ -110,7 +122,7 @@ const Upload = ({
 
       <Form.Item name={name('content_type', 'type')} label="请求体类型">
         <Radio.Group
-          value={data.api.upload.content_type.type}
+          value={content_type.type}
           disabled={disabled}
           onChange={(e) => {
             handleChange({
@@ -122,13 +134,11 @@ const Upload = ({
                   content_type:
                     e.target.value === 'JSON'
                       ? {
-                        ...(data.api.upload
-                          .content_type as ApiUploadJsonContentType),
+                        ...(content_type as ApiUploadJsonContentType),
                         type: 'JSON',
                       }
                       : {
-                        ...(data.api.upload
-                          .content_type as ApiUploadMultipartContentType),
+                        ...(content_type as ApiUploadMultipartContentType),
                         type: 'MULTIPART',
                       },
                 },
@@ -141,7 +151,7 @@ const Upload = ({
         </Radio.Group>
       </Form.Item>
 
-      {data.api.upload.content_type.type === 'MULTIPART' ? (
+      {content_type.type === 'MULTIPART' ? (
         <Space wrap>
           <Form.Item
             name={name('content_type', 'file_kind')}
@@ -149,7 +159,7 @@ const Upload = ({
             tooltip="流式响应支持上传进度，流式上传失败时可尝试更换为 bytes"
           >
             <Radio.Group
-              value={data.api.upload.content_type.file_kind ?? 'STREAM'}
+              value={content_type.file_kind ?? 'STREAM'}
               disabled={disabled}
               onChange={(e) => {
                 handleChange({
@@ -159,8 +169,7 @@ const Upload = ({
                     upload: {
                       ...data.api.upload,
                       content_type: {
-                        ...(data.api.upload
-                          .content_type as ApiUploadMultipartContentType),
+                        ...(content_type as ApiUploadMultipartContentType),
                         file_kind: e.target.value,
                       },
                     },
@@ -179,7 +188,7 @@ const Upload = ({
             rules={rules}
           >
             <Input
-              value={data.api.upload.content_type.file_part_name}
+              value={content_type.file_part_name}
               disabled={disabled}
               onChange={(e) => {
                 handleChange({
@@ -189,8 +198,7 @@ const Upload = ({
                     upload: {
                       ...data.api.upload,
                       content_type: {
-                        ...(data.api.upload
-                          .content_type as ApiUploadMultipartContentType),
+                        ...(content_type as ApiUploadMultipartContentType),
                         file_part_name: e.target.value,
                       },
                     },
@@ -208,7 +216,7 @@ const Upload = ({
             name={name('content_type', 'key')}
             rules={rules}
           >
-            <Input value={data.api.upload.content_type.key} />
+            <Input value={content_type.key} />
           </Form.Item>
 
           <Form.Item
@@ -227,7 +235,7 @@ const Upload = ({
           rules={rules}
         >
           <Input
-            value={data.api.upload.controller.image_url_key}
+            value={controller.image_url_key}
             disabled={disabled}
             onChange={(e) => {
               handleChange({
@@ -237,7 +245,7 @@ const Upload = ({
                   upload: {
                     ...data.api.upload,
                     controller: {
-                      ...data.api.upload.controller,
+                      ...controller,
                       image_url_key: e.target.value,
                     },
                   },
@@ -253,7 +261,7 @@ const Upload = ({
           rules={rules}
         >
           <Input
-            value={data.api.upload.controller.deleted_id_key}
+            value={controller.deleted_id_key}
             disabled={disabled}
             onChange={(e) => {
               handleChange({
@@ -263,7 +271,7 @@ const Upload = ({
                   upload: {
                     ...data.api.upload,
                     controller: {
-                      ...data.api.upload.controller,
+                      ...controller,
                       deleted_id_key: e.target.value,
                     },
                   },
@@ -275,7 +283,7 @@ const Upload = ({
 
         <Form.Item name={name('controller', 'thumb_key')} label="图片缓存键">
           <Input
-            value={data.api.upload.controller.thumb_key}
+            value={controller.thumb_key}
             disabled={disabled}
             onChange={(e) => {
               handleChange({
@@ -285,7 +293,7 @@ const Upload = ({
                   upload: {
                     ...data.api.upload,
                     controller: {
-                      ...data.api.upload.controller,
+                      ...controller,
                       thumb_key: e.target.value,
                     },
                   },

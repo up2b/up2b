@@ -178,8 +178,31 @@ async fn automatic_compression() -> bool {
 }
 
 #[tauri::command]
-async fn new_custom_manager(manager_code: ManagerCode, auth_config: ManagerAuthConfigKind) {
-    println!("manager: {} config: {:?}", manager_code, auth_config);
+async fn new_custom_manager(
+    manager_code: ManagerCode,
+    auth_config: ManagerAuthConfigKind,
+) -> Result<()> {
+    let mut conf = CONFIG.write().await;
+
+    let mut config = match conf.take() {
+        Some(c) => {
+            let auth_configs = c.auth_config().clone();
+            if auth_configs.contains_key(&manager_code) {
+                return Err(Error::CustomUnique(manager_code));
+            }
+            c
+        }
+        None => Config::default(),
+    };
+
+    config.insert_auth_config(manager_code.clone(), auth_config);
+    config.set_using(manager_code);
+
+    write_config(&config)?;
+
+    *conf = Some(config);
+
+    Ok(())
 }
 
 #[tokio::main]
