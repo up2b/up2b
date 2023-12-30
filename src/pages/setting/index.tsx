@@ -19,12 +19,12 @@ import {
   updateConfig,
   verify,
 } from '~/lib'
-import ApiSetting from './components/api/index.tsx'
 import ProxySetting from './proxy'
 import './index.scss'
 import { open } from '@tauri-apps/api/shell'
 import { PlusOutlined } from '@ant-design/icons'
 import AddCustom from './components/add.tsx'
+import ApiSettingForm from './components/api/form.tsx'
 
 const { Option } = Select
 
@@ -148,10 +148,9 @@ const Setting = ({ config, setConfig }: SettingProps) => {
       case 'API':
         const apiKey = config!.using as InferKeyType<typeof imageBedKind>
         return (
-          <ApiSetting
+          <ApiSettingForm
             code={apiKey}
-            token={config?.auth_config?.[apiKey]?.token}
-            config={config?.auth_config?.[apiKey]?.api}
+            authConfig={config?.auth_config?.[apiKey]}
             onChange={(data) => {
               setConfig((pre) => ({
                 ...pre!,
@@ -221,6 +220,8 @@ const Setting = ({ config, setConfig }: SettingProps) => {
     }
   }
 
+  console.log(config)
+
   return (
     <div id="setting">
       {contextHolder}
@@ -238,7 +239,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
       {import.meta.env.MODE === 'production' ? null : <ProxySetting />}
 
       {compressEnbled ? (
-        <Form style={{ padding: '0 24px' }}>
+        <div style={{ padding: '0 24px' }}>
           <Form.Item
             label="自动压缩"
             tooltip="开启此功能后在上传图片时会自动将体积超出限制的图片自动压缩后上传图床"
@@ -253,14 +254,14 @@ const Setting = ({ config, setConfig }: SettingProps) => {
               />
             </Space>
           </Form.Item>
-        </Form>
+        </div>
       ) : null}
 
       {imageBeds.length ? (
-        <Form style={{ padding: '0 24px' }}>
+        <div style={{ padding: '0 24px' }}>
           <Divider>图床</Divider>
 
-          <Form.Item label="选择图床" style={{ maxWidth: 180 }}>
+          <Form.Item label="选择图床">
             <Space>
               <Select
                 placeholder="选择要使用的图床"
@@ -349,7 +350,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
               </Button>
             </Space>
           </Form.Item>
-        </Form>
+        </div>
       ) : null}
 
       <AddCustom

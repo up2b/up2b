@@ -43,7 +43,7 @@ const SuccessField = ({ value, disabled, onChange }: SuccessFieldProps) => {
 interface DeleteProps {
   data: ApiAuthConfig
   rules: FormRule[]
-  urlRules: FormRule[]
+  pathRules: FormRule[]
   disabled: boolean
   handleChange: (data: ApiAuthConfig) => void
 }
@@ -51,7 +51,7 @@ interface DeleteProps {
 const Delete = ({
   data,
   rules,
-  urlRules,
+  pathRules,
   disabled,
   handleChange,
 }: DeleteProps) => {
@@ -61,7 +61,7 @@ const Delete = ({
 
   return (
     <>
-      <Form.Item label="路径" name={name('path')} rules={urlRules}>
+      <Form.Item label="路径" name={name('path')} rules={pathRules}>
         <Input
           placeholder="输入图片删除接口路径"
           value={path}

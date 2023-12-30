@@ -9,8 +9,7 @@ import Upload from './upload'
 
 interface ApiSettingProps {
   code: string
-  token?: string
-  config?: ApiConfig
+  authConfig?: ApiAuthConfig
   onChange?: (data: ApiAuthConfig) => void
 }
 
@@ -54,49 +53,62 @@ export const initApiConfig: ApiAuthConfig = {
   },
 }
 
-const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
-  const [data, setData] = useState<ApiAuthConfig>({
-    type: 'API',
-    token: token ?? '',
-    api: config ?? initApiConfig.api,
-  })
+const ApiSetting = ({ code, authConfig, onChange }: ApiSettingProps) => {
+  const [token, setToken] = useState<string>(authConfig?.token ?? '')
+  const [config, setConfig] = useState<ApiConfig | undefined>(authConfig?.api)
 
   useEffect(() => {
-    if (code === 'SMMS' && !config) {
-      getSmmsConfig().then((c) => {
-        setData({ ...data, api: c })
-      })
+    if (!authConfig?.api) {
+      if (code === 'SMMS') {
+        // 第一次配置 smms 时才会获取 smms 示例配置
+        getSmmsConfig().then((c) => {
+          setConfig(c)
+        })
+      } else {
+        setConfig(initApiConfig.api)
+      }
     }
   }, [code, config])
 
   const disabled = code === 'SMMS'
 
   const handleChange = (data: ApiAuthConfig) => {
-    setData(data)
+    setToken(data.token)
+    setConfig(data.api)
 
     onChange?.(data)
   }
 
   const rules: FormRule[] = [{ required: true }]
-  const urlRules: FormRule[] = [...rules, { type: 'url', warningOnly: true }]
+  const pathRules: FormRule[] = [
+    ...rules,
+    { type: 'string', warningOnly: true, pattern: /^\/\w+\/?$/ },
+  ]
 
-  console.log(data)
+  if (!config) {
+    return null
+  }
+
+  const data: ApiAuthConfig = {
+    type: 'API',
+    token,
+    api: config,
+  }
 
   return (
     <>
       <Form.Item name="token" label="TOKEN" rules={rules}>
         <Input.Password
           placeholder="输入 token"
-          value={data.token || ''}
+          value={token ?? ''}
           onChange={(e) => handleChange({ ...data, token: e.target.value })}
         />
       </Form.Item>
 
       <Form.Item
-        name="base_url"
+        name={['api', 'base_url']}
         label="接口"
-        rules={urlRules}
-        initialValue={data.api.base_url}
+        rules={[...rules, { type: 'url', warningOnly: true }]}
       >
         <Input
           placeholder="输入接口"
@@ -123,7 +135,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
       <ImageList
         data={data}
         rules={rules}
-        urlRules={urlRules}
+        pathRules={pathRules}
         disabled={disabled}
         handleChange={handleChange}
       />
@@ -132,7 +144,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
       <Delete
         data={data}
         rules={rules}
-        urlRules={urlRules}
+        pathRules={pathRules}
         disabled={disabled}
         handleChange={handleChange}
       />
@@ -141,7 +153,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
       <Upload
         data={data}
         rules={rules}
-        urlRules={urlRules}
+        pathRules={pathRules}
         disabled={disabled}
         handleChange={handleChange}
       />

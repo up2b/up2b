@@ -5,7 +5,7 @@ import type { FormRule } from 'antd'
 interface ImageListProps {
   data: ApiAuthConfig
   rules: FormRule[]
-  urlRules: FormRule[]
+  pathRules: FormRule[]
   disabled: boolean
   handleChange: (data: ApiAuthConfig) => void
 }
@@ -13,7 +13,7 @@ interface ImageListProps {
 const ImageList = ({
   data,
   rules,
-  urlRules,
+  pathRules,
   disabled,
   handleChange,
 }: ImageListProps) => {
@@ -23,7 +23,7 @@ const ImageList = ({
 
   return (
     <>
-      <Form.Item name={name('path')} label="路径" rules={urlRules}>
+      <Form.Item name={name('path')} label="路径" rules={pathRules}>
         <Input
           placeholder="输入图片列表接口路径"
           value={path}

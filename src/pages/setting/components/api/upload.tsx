@@ -7,7 +7,7 @@ const ALLOWED_FORMATS = ['PNG', 'JPEG', 'GIF', 'WEBP', 'BMP']
 interface UploadProps {
   data: ApiAuthConfig
   rules: FormRule[]
-  urlRules: FormRule[]
+  pathRules: FormRule[]
   disabled: boolean
   handleChange: (data: ApiAuthConfig) => void
 }
@@ -15,7 +15,7 @@ interface UploadProps {
 const Upload = ({
   data,
   rules,
-  urlRules,
+  pathRules,
   disabled,
   handleChange,
 }: UploadProps) => {
@@ -30,7 +30,7 @@ const Upload = ({
 
   return (
     <>
-      <Form.Item label="路径" name={name('path')} rules={urlRules}>
+      <Form.Item label="路径" name={name('path')} rules={pathRules}>
         <Input
           placeholder="输入上传图片接口路径"
           value={path}
