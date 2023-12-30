@@ -152,6 +152,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
             code={apiKey}
             authConfig={config?.auth_config?.[apiKey]}
             onChange={(data) => {
+              console.log(data)
               setConfig((pre) => ({
                 ...pre!,
                 auth_config: {

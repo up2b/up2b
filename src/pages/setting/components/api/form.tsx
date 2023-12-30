@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Form } from 'antd'
+import { Form, Button } from 'antd'
 import { getSmmsConfig } from '~/lib/api'
 import ApiSetting, { initApiConfig } from '.'
 
@@ -38,6 +38,19 @@ const ApiSettingForm = ({ code, authConfig, onChange }: ApiSettingProps) => {
   return (
     <Form initialValues={data}>
       <ApiSetting code={code} authConfig={data} onChange={onChange} />
+
+      <Button
+        key="cancel"
+        type="default"
+        onClick={() => {
+          // onCancel()
+        }}
+      >
+        取消
+      </Button>
+      <Button key="submit" type="primary" htmlType="submit">
+        确认
+      </Button>
     </Form>
   )
 }

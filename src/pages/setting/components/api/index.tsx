@@ -45,6 +45,7 @@ export const initApiConfig: ApiAuthConfig = {
         file_kind: 'STREAM',
         file_part_name: '',
       },
+      other_body: {},
       controller: {
         image_url_key: '',
         deleted_id_key: '',

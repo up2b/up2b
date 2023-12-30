@@ -89,7 +89,6 @@ interface ApiDeleteConfig {
 interface ApiUploadJsonContentType {
   type: 'JSON'
   key: string
-  other_body?: string // TODO: 类型待以后完善，目前未遇到通过 json 上传的图床
 }
 
 type FileKind = 'STREAM' | 'BUFFER'
@@ -117,6 +116,7 @@ interface ApiUploadConfig {
   allowed_formats: string[]
   content_type: ApiUploadContentType
   controller: ApiUploadController
+  other_body?: Record<string, any>
 }
 
 type ApiDeleteControllerForm = {

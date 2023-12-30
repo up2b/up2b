@@ -1,4 +1,4 @@
-import React from 'antd'
+import React from 'react'
 import { Form, Input, Radio, Space, InputNumber, Select } from 'antd'
 import type { FormRule } from 'antd'
 
@@ -21,8 +21,15 @@ const Upload = ({
 }: UploadProps) => {
   const name = (...key: string[]) => ['api', 'upload', ...key]
 
-  const { path, max_size, timeout, allowed_formats, content_type, controller } =
-    data.api.upload
+  const {
+    path,
+    max_size,
+    timeout,
+    allowed_formats,
+    content_type,
+    controller,
+    other_body,
+  } = data.api.upload
 
   const filteredFormats = ALLOWED_FORMATS.filter(
     (o) => !allowed_formats.includes(o),
@@ -218,15 +225,34 @@ const Upload = ({
           >
             <Input value={content_type.key} />
           </Form.Item>
-
-          <Form.Item
-            name={name('content_type', 'other_body')}
-            label="除图片之外的其他 json 数据"
-          >
-            <Input.TextArea />
-          </Form.Item>
         </>
       )}
+
+      <Form.Item
+        label="其他表单值"
+        // name={name('other_body')}
+        help="json 格式字符串，全角引号会自动替换为半角"
+      >
+        <Input.TextArea
+          placeholder='{"key": "value"}'
+          defaultValue={JSON.stringify(other_body)}
+          onChange={(e) => {
+            const str = e.target.value.replaceAll('”', '"').replaceAll('“', '"')
+            try {
+              const obj = JSON.parse(str)
+              handleChange({
+                ...data,
+                api: {
+                  ...data.api,
+                  upload: { ...data.api.upload, other_body: obj },
+                },
+              })
+            } catch (e) {
+              console.error(e)
+            }
+          }}
+        />
+      </Form.Item>
 
       <Space wrap>
         <Form.Item
