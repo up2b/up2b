@@ -33,7 +33,7 @@ export const initApiConfig: ApiAuthConfig = {
     delete: {
       url: '',
       method: { type: 'GET', kind: { type: 'PATH' } },
-      controller: { type: 'JSON', key: '', should_be: '' },
+      controller: { type: 'JSON', key: '', should_be: true },
     },
     upload: {
       url: '',
@@ -54,9 +54,6 @@ export const initApiConfig: ApiAuthConfig = {
 }
 
 const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
-  const form = Form.useFormInstance()
-  console.log(form.getFieldValue('upload'))
-
   const [data, setData] = useState<ApiAuthConfig>({
     type: 'API',
     token: token ?? '',
@@ -82,7 +79,7 @@ const ApiSetting = ({ code, token, config, onChange }: ApiSettingProps) => {
   const rules: FormRule[] = [{ required: true }]
   const urlRules: FormRule[] = [...rules, { type: 'url', warningOnly: true }]
 
-  console.log(data.api.upload.allowed_formats)
+  console.log(data.api.delete)
 
   return (
     <>

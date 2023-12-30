@@ -1,6 +1,44 @@
-import React from 'antd'
+import React, { InputNumber } from 'antd'
 import { Form, Input, Radio, Space, Switch, Select } from 'antd'
 import type { FormRule } from 'antd'
+import { useState } from 'react'
+
+interface SuccessFieldProps {
+  value: string | number | boolean
+  disabled: boolean
+  onChange: (value: string | number | boolean) => void
+}
+
+const SuccessField = ({ value, disabled, onChange }: SuccessFieldProps) => {
+  const [selected, setSelected] = useState<'string' | 'number' | 'boolean'>(
+    typeof value as 'string' | 'number' | 'boolean',
+  )
+
+  const render = () => {
+    switch (selected) {
+      case 'string':
+        return <Input onChange={(e) => onChange(e.target.value)} />
+      case 'number':
+        return <InputNumber onChange={(v) => onChange(v!)} />
+      case 'boolean':
+        return (
+          <Switch checked={value as boolean | undefined} onChange={onChange} />
+        )
+    }
+  }
+
+  return (
+    <Space>
+      <Select value={selected} disabled={disabled} onChange={setSelected}>
+        <Select.Option value="boolean">布尔</Select.Option>
+        <Select.Option value="number">数字</Select.Option>
+        <Select.Option value="string">字符串</Select.Option>
+      </Select>
+
+      {render()}
+    </Space>
+  )
+}
 
 interface DeleteProps {
   data: ApiAuthConfig
@@ -19,12 +57,14 @@ const Delete = ({
 }: DeleteProps) => {
   const name = (...key: string[]) => ['api', 'delete', ...key]
 
+  const { url, method, controller } = data.api.delete
+
   return (
     <>
       <Form.Item label="接口" name={name('url')} rules={urlRules}>
         <Input
           placeholder="输入图片删除接口"
-          value={data.api.delete.url}
+          value={url}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
@@ -43,7 +83,7 @@ const Delete = ({
 
       <Form.Item label="请求方法" name={name('method', 'type')}>
         <Radio.Group
-          value={data.api.delete.method.type}
+          value={method.type}
           disabled={disabled}
           onChange={(e) =>
             handleChange({
@@ -55,10 +95,11 @@ const Delete = ({
                   method:
                     e.target.value === 'GET'
                       ? {
-                        type: 'GET',
-                        kind: (data.api.delete.method as ApiDeleteGetMethod)
-                          .kind ?? { type: 'PATH' },
-                      }
+                          type: 'GET',
+                          kind: (method as ApiDeleteGetMethod).kind ?? {
+                            type: 'PATH',
+                          },
+                        }
                       : { type: 'POST' },
                 },
               },
@@ -70,7 +111,7 @@ const Delete = ({
         </Radio.Group>
       </Form.Item>
 
-      {data.api.delete.method.type === 'GET' ? (
+      {method.type === 'GET' ? (
         <>
           <Form.Item
             name={name('method', 'kind', 'type')}
@@ -78,7 +119,7 @@ const Delete = ({
           >
             <Radio.Group
               disabled={disabled}
-              value={data.api.delete.method.kind.type ?? 'PATH'}
+              value={method.kind.type ?? 'PATH'}
               onChange={(e) =>
                 handleChange({
                   ...data,
@@ -87,10 +128,9 @@ const Delete = ({
                     delete: {
                       ...data.api.delete,
                       method: {
-                        ...(data.api.delete.method as ApiDeleteGetMethod),
+                        ...(method as ApiDeleteGetMethod),
                         kind: {
-                          ...(data.api.delete.method as ApiDeleteGetMethod)
-                            .kind,
+                          ...(method as ApiDeleteGetMethod).kind,
                           type: e.target.value,
                         },
                       },
@@ -104,7 +144,7 @@ const Delete = ({
             </Radio.Group>
           </Form.Item>
 
-          {data.api.delete.method.kind.type === 'QUERY' ? (
+          {method.kind.type === 'QUERY' ? (
             <Form.Item name={name('method', 'kind', 'key')} label="key">
               <Input />
             </Form.Item>
@@ -119,7 +159,7 @@ const Delete = ({
         valuePropName="checked"
       >
         <Switch
-          value={data.api.delete.controller.type === 'JSON'}
+          value={controller.type === 'JSON'}
           disabled={disabled}
           onChange={(v) =>
             handleChange({
@@ -130,10 +170,9 @@ const Delete = ({
                   ...data.api.delete,
                   controller: v
                     ? {
-                      ...(data.api.delete
-                        .controller as ApiDeleteJsonController),
-                      type: 'JSON',
-                    }
+                        ...(controller as ApiDeleteJsonController),
+                        type: 'JSON',
+                      }
                     : { type: 'STATUS' },
                 },
               },
@@ -142,7 +181,7 @@ const Delete = ({
         />
       </Form.Item>
 
-      {data.api.delete.controller.type === 'JSON' ? (
+      {controller.type === 'JSON' ? (
         <Form.Item>
           <Space wrap>
             <Form.Item
@@ -152,7 +191,7 @@ const Delete = ({
             >
               <Input
                 placeholder="删除成功与否的键名"
-                value={data.api.delete.controller.key}
+                value={controller.key}
                 disabled={disabled}
                 onChange={(e) =>
                   handleChange({
@@ -162,8 +201,7 @@ const Delete = ({
                       delete: {
                         ...data.api.delete,
                         controller: {
-                          ...(data.api.delete
-                            .controller as ApiDeleteJsonController),
+                          ...(controller as ApiDeleteJsonController),
                           key: e.target.value,
                         },
                       },
@@ -179,21 +217,10 @@ const Delete = ({
               name={name('controller', 'should_be')}
               rules={rules}
             >
-              <Input
-                addonBefore={
-                  <Select
-                    value={typeof data.api.delete.controller.should_be}
-                    disabled={disabled}
-                  >
-                    <Select.Option value="boolean">布尔</Select.Option>
-                    <Select.Option value="number">数字</Select.Option>
-                    <Select.Option value="string">字符串</Select.Option>
-                  </Select>
-                }
-                placeholder="删除成功的值"
-                value={data.api.delete.controller.should_be}
+              <SuccessField
+                value={controller.should_be}
                 disabled={disabled}
-                onChange={(e) =>
+                onChange={(v) =>
                   handleChange({
                     ...data,
                     api: {
@@ -201,10 +228,8 @@ const Delete = ({
                       delete: {
                         ...data.api.delete,
                         controller: {
-                          ...(data.api.delete
-                            .controller as ApiDeleteJsonController),
-                          // TODO: 根据 addonBefore 的数据类型进行转换
-                          should_be: e.target.value,
+                          ...(controller as ApiDeleteJsonController),
+                          should_be: v,
                         },
                       },
                     },
@@ -220,7 +245,7 @@ const Delete = ({
             >
               <Input
                 placeholder="删除失败的消息键名"
-                value={data.api.delete.controller.message_key}
+                value={controller.message_key}
                 disabled={disabled}
                 onChange={(e) =>
                   handleChange({
@@ -230,8 +255,7 @@ const Delete = ({
                       delete: {
                         ...data.api.delete,
                         controller: {
-                          ...(data.api.delete
-                            .controller as ApiDeleteJsonController),
+                          ...(controller as ApiDeleteJsonController),
                           message_key: e.target.value,
                         },
                       },
