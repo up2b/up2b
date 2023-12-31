@@ -47,7 +47,7 @@ interface ApiListConfig {
   controller: ApiListController
 }
 
-interface ApiDeleteGetPathKind {
+interface ApiDeletePathKind {
   type: 'PATH'
 }
 
@@ -58,12 +58,12 @@ interface ApiDeleteQueryKind {
 
 interface ApiDeleteGetMethod {
   type: 'GET'
-  kind: ApiDeleteGetPathKind | ApiDeleteQueryKind
+  kind: ApiDeletePathKind | ApiDeleteQueryKind
 }
 
 interface ApiDeleteDeleteMethod {
   type: 'DELETE'
-  kind: ApiDeleteGetPathKind | ApiDeleteQueryKind
+  kind: ApiDeletePathKind | ApiDeleteQueryKind
 }
 
 interface ApiDeletePostMethod {

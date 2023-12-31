@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Divider, Form, Input } from 'antd'
 import type { FormRule } from 'antd'
-import { getSmmsConfig } from '~/lib/api'
 import AuthMethod from './auth-method'
 import ImageList from './image-list'
 import Delete from './delete'
@@ -9,8 +8,6 @@ import Upload from './upload'
 
 interface ApiSettingProps {
   code: string
-  authConfig?: ApiAuthConfigForm
-  onChange?: (data: ApiAuthConfigForm) => void
 }
 
 export const initApiConfigFormValues: ApiAuthConfigForm = {
@@ -90,7 +87,7 @@ export const formDataToApiConfig = (formData: ApiConfigForm): ApiConfig => {
   }
 }
 
-const ApiSetting = ({ code, authConfig, onChange }: ApiSettingProps) => {
+const ApiSetting = ({ code }: ApiSettingProps) => {
   const rules: FormRule[] = [{ required: true }]
   const pathRules: FormRule[] = [
     ...rules,
@@ -114,31 +111,16 @@ const ApiSetting = ({ code, authConfig, onChange }: ApiSettingProps) => {
       </Form.Item>
 
       <Divider>认证方式</Divider>
-      <AuthMethod data={authConfig} rules={rules} disabled={disabled} />
+      <AuthMethod rules={rules} disabled={disabled} />
 
       <Divider>图片列表</Divider>
-      <ImageList
-        data={authConfig}
-        rules={rules}
-        pathRules={pathRules}
-        disabled={disabled}
-      />
+      <ImageList rules={rules} pathRules={pathRules} disabled={disabled} />
 
       <Divider>删除</Divider>
-      <Delete
-        data={authConfig}
-        rules={rules}
-        pathRules={pathRules}
-        disabled={disabled}
-      />
+      <Delete rules={rules} pathRules={pathRules} disabled={disabled} />
 
       <Divider>上传</Divider>
-      <Upload
-        data={authConfig}
-        rules={rules}
-        pathRules={pathRules}
-        disabled={disabled}
-      />
+      <Upload rules={rules} pathRules={pathRules} disabled={disabled} />
     </>
   )
 }

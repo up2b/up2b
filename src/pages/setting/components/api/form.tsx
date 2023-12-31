@@ -67,10 +67,10 @@ const ApiSettingForm = ({
         const c = formDataToApiConfig(values.api)
         console.log(c)
 
-        onOk()
+        // onOk?.({ ...values, api: c })
       }}
     >
-      <ApiSetting code={code} authConfig={formData} />
+      <ApiSetting code={code} />
 
       <Form.Item
         style={{

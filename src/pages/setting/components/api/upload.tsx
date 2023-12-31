@@ -5,55 +5,43 @@ import type { FormRule } from 'antd'
 const ALLOWED_FORMATS = ['PNG', 'JPEG', 'GIF', 'WEBP', 'BMP']
 
 interface UploadProps {
-  data: ApiAuthConfigForm
   rules: FormRule[]
   pathRules: FormRule[]
   disabled: boolean
 }
 
-const Upload = ({ data, rules, pathRules, disabled }: UploadProps) => {
+const Upload = ({ rules, pathRules, disabled }: UploadProps) => {
   const name = (...key: string[]) => ['api', 'upload', ...key]
 
-  const {
-    path,
-    max_size,
-    timeout,
-    allowed_formats,
-    content_type,
-    controller,
-    other_body,
-  } = data.api.upload
+  const form = Form.useFormInstance()
+
+  const allowedFormatsValue =
+    Form.useWatch(name('allowed_formats'), form) || ([] as string[])
+  const contentTypeValue = Form.useWatch(
+    name('content_type', 'type'),
+    form,
+  ) as ApiUploadConfig['content_type']['type']
 
   const filteredFormats = ALLOWED_FORMATS.filter(
-    (o) => !allowed_formats.includes(o),
+    (o) => !allowedFormatsValue.includes(o),
   )
 
   return (
     <>
       <Form.Item label="路径" name={name('path')} rules={pathRules}>
-        <Input
-          placeholder="输入上传图片接口路径"
-          value={path}
-          disabled={disabled}
-        />
+        <Input placeholder="输入上传图片接口路径" disabled={disabled} />
       </Form.Item>
 
       <Form.Item label="最大体积" name={name('max_size')} rules={rules}>
         <InputNumber
           placeholder="输入允许的最大体积"
-          value={max_size ? max_size : undefined}
           disabled={disabled}
           addonAfter="MB"
         />
       </Form.Item>
 
       <Form.Item label="超时时间" name={name('timeout')}>
-        <InputNumber
-          disabled={disabled}
-          min={0}
-          value={timeout}
-          addonAfter="秒"
-        />
+        <InputNumber disabled={disabled} min={0} addonAfter="秒" />
       </Form.Item>
 
       <Form.Item
@@ -65,7 +53,6 @@ const Upload = ({ data, rules, pathRules, disabled }: UploadProps) => {
           mode="multiple"
           allowClear
           placeholder="选择图片格式"
-          value={allowed_formats}
           options={filteredFormats.map((item) => ({
             value: item,
             label: item,
@@ -75,23 +62,20 @@ const Upload = ({ data, rules, pathRules, disabled }: UploadProps) => {
       </Form.Item>
 
       <Form.Item name={name('content_type', 'type')} label="请求体类型">
-        <Radio.Group value={content_type.type} disabled={disabled}>
+        <Radio.Group disabled={disabled}>
           <Radio value="MULTIPART">multipart</Radio>
           <Radio value="JSON">json</Radio>
         </Radio.Group>
       </Form.Item>
 
-      {content_type.type === 'MULTIPART' ? (
+      {contentTypeValue === 'MULTIPART' ? (
         <Space wrap>
           <Form.Item
             name={name('content_type', 'file_kind')}
             label="上传类型"
             tooltip="流式响应支持上传进度，流式上传失败时可尝试更换为 bytes"
           >
-            <Radio.Group
-              value={content_type.file_kind ?? 'STREAM'}
-              disabled={disabled}
-            >
+            <Radio.Group disabled={disabled}>
               <Radio value="STREAM">流</Radio>
               <Radio value="BUFFER">bytes</Radio>
             </Radio.Group>
@@ -102,7 +86,7 @@ const Upload = ({ data, rules, pathRules, disabled }: UploadProps) => {
             name={name('content_type', 'file_part_name')}
             rules={rules}
           >
-            <Input value={content_type.file_part_name} disabled={disabled} />
+            <Input disabled={disabled} />
           </Form.Item>
         </Space>
       ) : (
@@ -113,7 +97,7 @@ const Upload = ({ data, rules, pathRules, disabled }: UploadProps) => {
             name={name('content_type', 'key')}
             rules={rules}
           >
-            <Input value={content_type.key} />
+            <Input />
           </Form.Item>
         </>
       )}
@@ -123,11 +107,7 @@ const Upload = ({ data, rules, pathRules, disabled }: UploadProps) => {
         name={name('other_body')}
         help="json 格式字符串，全角引号会自动替换为半角"
       >
-        <Input.TextArea
-          placeholder='{"key": "value"}'
-          value={other_body && JSON.stringify(other_body)}
-          disabled={disabled}
-        />
+        <Input.TextArea placeholder='{"key": "value"}' disabled={disabled} />
       </Form.Item>
 
       <Space wrap>
@@ -136,7 +116,7 @@ const Upload = ({ data, rules, pathRules, disabled }: UploadProps) => {
           name={name('controller', 'image_url_key')}
           rules={rules}
         >
-          <Input value={controller.image_url_key} disabled={disabled} />
+          <Input disabled={disabled} />
         </Form.Item>
 
         <Form.Item
@@ -144,11 +124,11 @@ const Upload = ({ data, rules, pathRules, disabled }: UploadProps) => {
           name={name('controller', 'deleted_id_key')}
           rules={rules}
         >
-          <Input value={controller.deleted_id_key} disabled={disabled} />
+          <Input disabled={disabled} />
         </Form.Item>
 
         <Form.Item name={name('controller', 'thumb_key')} label="图片缓存键">
-          <Input value={controller.thumb_key} disabled={disabled} />
+          <Input disabled={disabled} />
         </Form.Item>
       </Space>
     </>

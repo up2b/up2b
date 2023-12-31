@@ -52,48 +52,55 @@ const SuccessField = ({ value, disabled, onChange }: SuccessFieldProps) => {
 }
 
 interface DeleteProps {
-  data: ApiAuthConfigForm
   rules: FormRule[]
   pathRules: FormRule[]
   disabled: boolean
 }
 
-const Delete = ({ data, rules, pathRules, disabled }: DeleteProps) => {
+const Delete = ({ rules, pathRules, disabled }: DeleteProps) => {
   const name = (...key: string[]) => ['api', 'delete', ...key]
 
-  const { path, method, controller } = data.api.delete
+  const form = Form.useFormInstance()
+  const methodTypeValue = Form.useWatch(
+    name('method', 'type'),
+    form,
+  ) as ApiDeleteMethod['type']
+  const methodKindTypeValue = Form.useWatch(
+    name('method', 'kind', 'type'),
+    form,
+  ) as (ApiDeletePathKind | ApiDeleteQueryKind)['type']
+  const controllerTypeValue = Form.useWatch(
+    name('controller', 'type'),
+    form,
+  ) as ApiDeleteController['type']
 
   return (
     <>
       <Form.Item label="路径" name={name('path')} rules={pathRules}>
-        <Input
-          placeholder="输入图片删除接口路径"
-          value={path}
-          disabled={disabled}
-        />
+        <Input placeholder="输入图片删除接口路径" disabled={disabled} />
       </Form.Item>
 
       <Form.Item label="请求方法" name={name('method', 'type')}>
-        <Radio.Group value={method.type} disabled={disabled}>
+        <Radio.Group disabled={disabled}>
           <Radio value="DELETE">DELETE</Radio>
           <Radio value="GET">GET</Radio>
           <Radio value="POST">POST</Radio>
         </Radio.Group>
       </Form.Item>
 
-      {method.type === 'GET' || method.type === 'DELETE' ? (
+      {methodTypeValue === 'GET' || methodTypeValue === 'DELETE' ? (
         <>
           <Form.Item
             name={name('method', 'kind', 'type')}
             label="删除 id 所在位置"
           >
-            <Radio.Group disabled={disabled} value={method.kind.type ?? 'PATH'}>
+            <Radio.Group disabled={disabled}>
               <Radio value="PATH">路径</Radio>
               <Radio value="QUERY">查询参数</Radio>
             </Radio.Group>
           </Form.Item>
 
-          {method.kind.type === 'QUERY' ? (
+          {methodKindTypeValue === 'QUERY' ? (
             <Form.Item name={name('method', 'kind', 'key')} label="key">
               <Input />
             </Form.Item>
@@ -107,10 +114,10 @@ const Delete = ({ data, rules, pathRules, disabled }: DeleteProps) => {
         tooltip="删除图片如果有响应体则应该传入响应体中的有效属性键，否则以响应状态码判断是否成功"
         valuePropName="checked"
       >
-        <Switch value={controller.type === 'JSON'} disabled={disabled} />
+        <Switch disabled={disabled} />
       </Form.Item>
 
-      {controller.type === 'JSON' ? (
+      {controllerTypeValue === 'JSON' ? (
         <Form.Item>
           <Space wrap>
             <Form.Item
@@ -118,11 +125,7 @@ const Delete = ({ data, rules, pathRules, disabled }: DeleteProps) => {
               name={name('controller', 'key')}
               rules={rules}
             >
-              <Input
-                placeholder="删除成功与否的键名"
-                value={controller.key}
-                disabled={disabled}
-              />
+              <Input placeholder="删除成功与否的键名" disabled={disabled} />
             </Form.Item>
 
             <Form.Item
@@ -139,11 +142,7 @@ const Delete = ({ data, rules, pathRules, disabled }: DeleteProps) => {
               name={name('controller', 'message_key')}
               rules={rules}
             >
-              <Input
-                placeholder="删除失败的消息键名"
-                value={controller.message_key}
-                disabled={disabled}
-              />
+              <Input placeholder="删除失败的消息键名" disabled={disabled} />
             </Form.Item>
           </Space>
         </Form.Item>
