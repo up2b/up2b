@@ -30,19 +30,29 @@ const ApiSettingForm = ({ code, onSubmit, onCancel }: ApiSettingFormProps) => {
       >
         <ApiSetting code={code} />
 
-        <Button
-          key="cancel"
-          type="default"
-          onClick={() => {
-            form.resetFields()
-            onCancel()
+        <Form.Item
+          style={{
+            display: 'flex',
+            justifyContent: 'end',
+            marginBottom: '2rem',
           }}
         >
-          取消
-        </Button>
-        <Button key="submit" type="primary" htmlType="submit">
-          确认
-        </Button>
+          <Space>
+            <Button
+              key="cancel"
+              type="default"
+              onClick={() => {
+                form.resetFields()
+                onCancel()
+              }}
+            >
+              取消
+            </Button>
+            <Button key="submit" type="primary" htmlType="submit">
+              确认
+            </Button>
+          </Space>
+        </Form.Item>
       </Form>
     </>
   )
