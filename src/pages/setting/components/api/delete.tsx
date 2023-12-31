@@ -110,11 +110,13 @@ const Delete = ({ rules, pathRules, disabled }: DeleteProps) => {
 
       <Form.Item
         name={name('controller', 'type')}
-        label="是否有响应体"
+        label="验证途径"
         tooltip="删除图片如果有响应体则应该传入响应体中的有效属性键，否则以响应状态码判断是否成功"
-        valuePropName="checked"
       >
-        <Switch disabled={disabled} />
+        <Radio.Group disabled={disabled}>
+          <Radio value="JSON">json响应</Radio>
+          <Radio value="STATUS">状态码</Radio>
+        </Radio.Group>
       </Form.Item>
 
       {controllerTypeValue === 'JSON' ? (

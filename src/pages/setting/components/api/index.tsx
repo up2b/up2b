@@ -30,7 +30,7 @@ export const initApiConfigFormValues: ApiAuthConfigForm = {
     delete: {
       path: '',
       method: { type: 'GET', kind: { type: 'PATH' } },
-      controller: { havaBody: true, type: 'JSON', key: '', should_be: true },
+      controller: { type: 'JSON', key: '', should_be: true },
     },
     upload: {
       path: '',
@@ -58,13 +58,6 @@ export const apiConfigToForm = (
 
   return {
     ...config,
-    delete: {
-      ...config.delete,
-      controller:
-        config.delete.controller.type === 'JSON'
-          ? { ...config.delete.controller, havaBody: true }
-          : { havaBody: false, type: 'STATUS' },
-    },
     upload: {
       ...config.upload,
       other_body: config.upload.other_body

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Button, Form, Input, Modal, Space } from 'antd'
+import { Button, Form, Input, Modal, Space, message } from 'antd'
 import ApiSetting, { initApiConfigFormValues } from './api'
 import { CheckOutlined } from '@ant-design/icons'
 import { newCustomManager } from '~/lib'
@@ -11,48 +11,40 @@ interface ApiSettingFormProps {
 }
 
 const ApiSettingForm = ({ code, onSubmit, onCancel }: ApiSettingFormProps) => {
+  const [messageApi, contextHolder] = message.useMessage()
+
   const [form] = Form.useForm()
 
   return (
-    <Form
-      form={form}
-      initialValues={initApiConfigFormValues}
-      onFinish={(values) => {
-        const apiAuthConfig = { type: 'API', ...values }
-        onSubmit(apiAuthConfig)
-      }}
-      onFinishFailed={(e) => console.log(e)}
-    >
-      <ApiSetting code={code} />
+    <>
+      {contextHolder}
 
-      <Button
-        key="cancel"
-        type="default"
-        onClick={() => {
-          form.resetFields()
-          onCancel()
+      <Form
+        form={form}
+        initialValues={initApiConfigFormValues}
+        onFinish={(values) => {
+          const apiAuthConfig = { type: 'API', ...values }
+          onSubmit(apiAuthConfig)
         }}
+        onFinishFailed={(e) => messageApi.error('一些配置项有错误，请检查')}
       >
-        取消
-      </Button>
-      <Button
-        key="submit"
-        type="primary"
-        htmlType="submit"
-        // disabled={disableOkButton}
-        // onClick={async () => {
-        //   console.log(form.getFieldsError())
-        //   // console.log(await form.validateFields())
-        //   // form.isFieldsValidating()
-        //
-        //   console.log(authConfig)
-        //   // newCustomManager('CUSTOM-' + code.code, authConfig!)
-        //   onOk()
-        // }}
-      >
-        确认
-      </Button>
-    </Form>
+        <ApiSetting code={code} />
+
+        <Button
+          key="cancel"
+          type="default"
+          onClick={() => {
+            form.resetFields()
+            onCancel()
+          }}
+        >
+          取消
+        </Button>
+        <Button key="submit" type="primary" htmlType="submit">
+          确认
+        </Button>
+      </Form>
+    </>
   )
 }
 
@@ -94,10 +86,10 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
           code.checked
             ? []
             : [
-                <Button key="cancel" type="default" onClick={onCancel}>
-                  取消
-                </Button>,
-              ]
+              <Button key="cancel" type="default" onClick={onCancel}>
+                取消
+              </Button>,
+            ]
         }
       >
         {code.checked ? (
@@ -107,13 +99,6 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
             onSubmit={(data) => {
               console.log(initApiConfigFormValues)
               console.log(data)
-              if (
-                (data.api.delete.controller as ApiDeleteControllerForm).type
-              ) {
-                data.api.delete.controller.type = 'JSON'
-              } else {
-                data.api.delete.controller.type = 'STATUS'
-              }
               newCustomManager('CUSTOM-' + code.code, data)
 
               onOk()
