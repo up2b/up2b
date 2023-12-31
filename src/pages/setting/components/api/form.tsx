@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Form, Button } from 'antd'
+import { Form, Button, Space } from 'antd'
 import { getSmmsConfig } from '~/lib/api'
 import ApiSetting, { initApiConfig } from '.'
 
@@ -7,9 +7,19 @@ interface ApiSettingProps {
   code: string
   authConfig?: ApiAuthConfig
   onChange?: (data: ApiAuthConfig) => void
+  onOk?: () => void
+  disableCancelButton?: boolean
+  disableOkButton?: boolean
 }
 
-const ApiSettingForm = ({ code, authConfig, onChange }: ApiSettingProps) => {
+const ApiSettingForm = ({
+  code,
+  authConfig,
+  onChange,
+  onOk,
+  disableCancelButton,
+  disableOkButton,
+}: ApiSettingProps) => {
   const [form] = Form.useForm()
 
   const [config, setConfig] = useState<ApiConfig | undefined>(authConfig?.api)
@@ -46,21 +56,36 @@ const ApiSettingForm = ({ code, authConfig, onChange }: ApiSettingProps) => {
   }
 
   return (
-    <Form key={code} form={form} initialValues={data}>
+    <Form form={form} initialValues={data} onFinish={onOk}>
       <ApiSetting code={code} authConfig={data} onChange={onChange} />
 
-      <Button
-        key="cancel"
-        type="default"
-        onClick={() => {
-          // onCancel()
+      <Form.Item
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '2rem',
         }}
       >
-        取消
-      </Button>
-      <Button key="submit" type="primary" htmlType="submit">
-        确认
-      </Button>
+        <Space>
+          <Button
+            key="cancel"
+            type="default"
+            onClick={() => location.reload()}
+            disabled={disableCancelButton}
+          >
+            取消
+          </Button>
+          <Button
+            key="submit"
+            type="primary"
+            htmlType="submit"
+            disabled={disableOkButton}
+          >
+            保存
+          </Button>
+        </Space>
+      </Form.Item>
     </Form>
   )
 }

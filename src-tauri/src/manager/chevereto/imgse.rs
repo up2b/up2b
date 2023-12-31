@@ -32,7 +32,7 @@ impl Imgse {
                 "https://imgse.com/",
                 username,
                 password,
-                10 * 1024 * 1024,
+                10,
                 FileKind::Buffer,
                 vec![
                     AllowedImageFormat::Jpeg,

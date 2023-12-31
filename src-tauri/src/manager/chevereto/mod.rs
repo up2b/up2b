@@ -158,7 +158,7 @@ impl Chevereto {
         base_url: &str,
         username: S,
         password: S,
-        max_size: u64,
+        max_size: u8,
         file_kind: FileKind,
         allowed_formats: Vec<AllowedImageFormat>,
         extra: Option<&HashMap<String, String>>,

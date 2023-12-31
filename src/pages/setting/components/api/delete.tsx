@@ -106,23 +106,31 @@ const Delete = ({
                   method:
                     e.target.value === 'GET'
                       ? {
-                          type: 'GET',
+                        type: 'GET',
+                        kind: (method as ApiDeleteGetMethod).kind ?? {
+                          type: 'PATH',
+                        },
+                      }
+                      : e.target.value === 'DELETE'
+                        ? {
+                          type: 'DELETE',
                           kind: (method as ApiDeleteGetMethod).kind ?? {
                             type: 'PATH',
                           },
                         }
-                      : { type: 'POST' },
+                        : { type: 'POST' },
                 },
               },
             })
           }
         >
+          <Radio value="DELETE">DELETE</Radio>
           <Radio value="GET">GET</Radio>
           <Radio value="POST">POST</Radio>
         </Radio.Group>
       </Form.Item>
 
-      {method.type === 'GET' ? (
+      {method.type === 'GET' || method.type === 'DELETE' ? (
         <>
           <Form.Item
             name={name('method', 'kind', 'type')}
@@ -181,9 +189,9 @@ const Delete = ({
                   ...data.api.delete,
                   controller: v
                     ? {
-                        ...(controller as ApiDeleteJsonController),
-                        type: 'JSON',
-                      }
+                      ...(controller as ApiDeleteJsonController),
+                      type: 'JSON',
+                    }
                     : { type: 'STATUS' },
                 },
               },

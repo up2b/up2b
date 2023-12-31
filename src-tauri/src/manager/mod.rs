@@ -184,7 +184,7 @@ async fn is_exceeded(
 #[derive(Debug, Clone)]
 pub(crate) struct BaseManager {
     name: String,
-    max_size: u64,
+    max_size: u8,
     client: Client,
     allowed_formats: Vec<AllowedImageFormat>,
     #[cfg(feature = "compress")]
@@ -194,7 +194,7 @@ pub(crate) struct BaseManager {
 impl BaseManager {
     fn new<S: Into<String>>(
         name: S,
-        max_size: u64,
+        max_size: u8,
         allowed_formats: Vec<AllowedImageFormat>,
         #[cfg(feature = "compress")] compressed_format: CompressedFormat,
     ) -> Self {
@@ -210,6 +210,12 @@ impl BaseManager {
 
     async fn get(&self, url: &str, headers: HeaderMap) -> Result<Response> {
         let resp = self.request(Method::GET, url, headers).send().await?;
+
+        Ok(resp)
+    }
+
+    async fn delete(&self, url: &str, headers: HeaderMap) -> Result<Response> {
+        let resp = self.request(Method::DELETE, url, headers).send().await?;
 
         Ok(resp)
     }
@@ -245,19 +251,21 @@ impl BaseManager {
     ) -> Result<File> {
         let file_size = file.metadata().await?.len();
 
+        let max_size = u64::from(self.max_size) * 1024 * 1024;
+
         #[cfg(not(feature = "compress"))]
-        is_exceeded(&self.name, image_path, self.max_size, file_size).await?;
+        is_exceeded(&self.name, image_path, max_size, file_size).await?;
 
         #[cfg(feature = "compress")]
         let file = {
             let config = CONFIG.read().await.clone().unwrap();
             if !config.automatic_compression() {
-                is_exceeded(&self.name, image_path, self.max_size, file_size).await?;
+                is_exceeded(&self.name, image_path, max_size, file_size).await?;
             }
 
             compress(
                 window,
-                self.max_size,
+                max_size,
                 file_size,
                 filename,
                 file,

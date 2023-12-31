@@ -61,11 +61,19 @@ interface ApiDeleteGetMethod {
   kind: ApiDeleteGetPathKind | ApiDeleteQueryKind
 }
 
+interface ApiDeleteDeleteMethod {
+  type: 'DELETE'
+  kind: ApiDeleteGetPathKind | ApiDeleteQueryKind
+}
+
 interface ApiDeletePostMethod {
   type: 'POST'
 }
 
-type ApiDeleteMethod = ApiDeleteGetMethod | ApiDeletePostMethod
+type ApiDeleteMethod =
+  | ApiDeleteGetMethod
+  | ApiDeletePostMethod
+  | ApiDeleteDeleteMethod
 
 interface ApiDeleteJsonController {
   type: 'JSON'
@@ -112,7 +120,7 @@ interface ApiUploadController {
 interface ApiUploadConfig {
   path: string
   max_size: number
-  timeout: number
+  timeout: number | null
   allowed_formats: string[]
   content_type: ApiUploadContentType
   controller: ApiUploadController

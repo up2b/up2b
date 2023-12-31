@@ -32,7 +32,7 @@ impl Imgtg {
                 "https://img.tg/",
                 username,
                 password,
-                5 * 1024 * 1024,
+                5,
                 FileKind::Stream,
                 vec![
                     AllowedImageFormat::Jpeg,

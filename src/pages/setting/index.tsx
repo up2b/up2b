@@ -151,6 +151,16 @@ const Setting = ({ config, setConfig }: SettingProps) => {
           <ApiSettingForm
             code={apiKey}
             authConfig={config?.auth_config?.[apiKey]}
+            disableCancelButton={areObjectsEqual(defaultConfig, config)}
+            disableOkButton={
+              (filterImageBed()?.type === 'API'
+                ? !(config?.auth_config?.[config.using] as ApiAuthConfig)?.token
+                : !(config?.auth_config?.[config.using] as CheveretoAuthConfig)
+                    ?.username ||
+                  !(config?.auth_config?.[config.using] as CheveretoAuthConfig)
+                    ?.password) || areObjectsEqual(defaultConfig, config)
+            }
+            onOk={onUpdateConfig}
             onChange={(data) => {
               console.log(data)
               setConfig((pre) => ({
@@ -311,46 +321,51 @@ const Setting = ({ config, setConfig }: SettingProps) => {
 
           {config?.using ? configKind() : null}
 
-          <Divider />
+          {filterImageBed()?.type === 'API' ? null : (
+            <>
+              <Divider />
 
-          <Form.Item
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Space>
-              <Button
-                onClick={() => location.reload()}
-                disabled={areObjectsEqual(defaultConfig, config)}
+              <Form.Item
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                取消
-              </Button>
-              <Button
-                type="primary"
-                loading={verifying}
-                onClick={onUpdateConfig}
-                disabled={
-                  (filterImageBed()?.type === 'API'
-                    ? !(config?.auth_config?.[config.using] as ApiAuthConfig)
-                        ?.token
-                    : !(
-                        config?.auth_config?.[
-                          config.using
-                        ] as CheveretoAuthConfig
-                      )?.username ||
-                      !(
-                        config?.auth_config?.[
-                          config.using
-                        ] as CheveretoAuthConfig
-                      )?.password) || areObjectsEqual(defaultConfig, config)
-                }
-              >
-                {verifying ? '验证中...' : '保存'}
-              </Button>
-            </Space>
-          </Form.Item>
+                <Space>
+                  <Button
+                    onClick={() => location.reload()}
+                    disabled={areObjectsEqual(defaultConfig, config)}
+                  >
+                    取消
+                  </Button>
+                  <Button
+                    type="primary"
+                    loading={verifying}
+                    onClick={onUpdateConfig}
+                    disabled={
+                      (filterImageBed()?.type === 'API'
+                        ? !(
+                            config?.auth_config?.[config.using] as ApiAuthConfig
+                          )?.token
+                        : !(
+                            config?.auth_config?.[
+                              config.using
+                            ] as CheveretoAuthConfig
+                          )?.username ||
+                          !(
+                            config?.auth_config?.[
+                              config.using
+                            ] as CheveretoAuthConfig
+                          )?.password) || areObjectsEqual(defaultConfig, config)
+                    }
+                  >
+                    {verifying ? '验证中...' : '保存'}
+                  </Button>
+                </Space>
+              </Form.Item>
+            </>
+          )}
         </div>
       ) : null}
 

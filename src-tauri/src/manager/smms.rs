@@ -9,7 +9,7 @@ use crate::http::multipart::FileKind;
 use crate::Result;
 
 use super::api::{
-    Api, AuthMethod, BaseApiManager, Delete, DeleteGetKind, DeleteMethod, List, ListRequestMethod,
+    Api, AuthMethod, BaseApiManager, Delete, DeleteKeyKind, DeleteMethod, List, ListRequestMethod,
     ListResponseController, Upload, UploadResponseController,
 };
 #[cfg(feature = "compress")]
@@ -23,7 +23,7 @@ lazy_static! {
     pub static ref SMMS_API: Api = {
         let upload = Upload::new(
             "/upload",
-            5 * 1024 * 1024,
+            5,
             vec![
                 AllowedImageFormat::Jpeg,
                 AllowedImageFormat::Png,
@@ -51,7 +51,7 @@ lazy_static! {
         let delete = Delete::new(
             "/delete/",
             DeleteMethod::Get {
-                kind: DeleteGetKind::Path,
+                kind: DeleteKeyKind::Path,
             },
             super::api::DeleteResponseController::Json {
                 key: "success".to_owned(),
@@ -65,13 +65,7 @@ lazy_static! {
             prefix: None,
         };
 
-        Api::new(
-            "https://smms.app/api/v2/",
-            auth_method,
-            upload,
-            list,
-            delete,
-        )
+        Api::new("https://smms.app/api/v2", auth_method, upload, list, delete)
     };
 }
 
@@ -141,7 +135,7 @@ impl SmMs {
     pub fn new(token: String) -> Self {
         let manager = BaseManager::new(
             "sm.ms",
-            5 * 1024 * 1024,
+            5,
             vec![
                 AllowedImageFormat::Jpeg,
                 AllowedImageFormat::Png,

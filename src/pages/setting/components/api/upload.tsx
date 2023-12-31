@@ -60,7 +60,7 @@ const Upload = ({
       <Form.Item label="最大体积" name={name('max_size')} rules={rules}>
         <InputNumber
           placeholder="输入允许的最大体积"
-          value={max_size ? max_size / 1024 / 1024 : undefined}
+          value={max_size ? max_size : undefined}
           disabled={disabled}
           addonAfter="MB"
           onChange={(v) =>
@@ -90,7 +90,7 @@ const Upload = ({
               ...data,
               api: {
                 ...data.api,
-                upload: { ...data.api.upload, timeout: v ?? 5 },
+                upload: { ...data.api.upload, timeout: v === 0 ? 5 : v },
               },
             })
           }
@@ -141,13 +141,13 @@ const Upload = ({
                   content_type:
                     e.target.value === 'JSON'
                       ? {
-                          ...(content_type as ApiUploadJsonContentType),
-                          type: 'JSON',
-                        }
+                        ...(content_type as ApiUploadJsonContentType),
+                        type: 'JSON',
+                      }
                       : {
-                          ...(content_type as ApiUploadMultipartContentType),
-                          type: 'MULTIPART',
-                        },
+                        ...(content_type as ApiUploadMultipartContentType),
+                        type: 'MULTIPART',
+                      },
                 },
               },
             })

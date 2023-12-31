@@ -107,7 +107,7 @@ impl UploadResponseController {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Upload {
     path: String,
-    max_size: u64,
+    max_size: u8,
     allowed_formats: Vec<AllowedImageFormat>,
     #[cfg(feature = "compress")]
     compressed_format: CompressedFormat,
@@ -121,7 +121,7 @@ pub struct Upload {
 impl Upload {
     pub fn new<T: Into<Option<u64>>, M: Into<Option<Map<String, Value>>>>(
         url: &str,
-        max_size: u64,
+        max_size: u8,
         allowed_formats: Vec<AllowedImageFormat>,
         #[cfg(feature = "compress")] compressed_format: CompressedFormat,
         content_type: UploadContentType,
@@ -130,6 +130,15 @@ impl Upload {
         timeout: T,
     ) -> Self {
         let secs: Option<u64> = timeout.into();
+        let timeout = {
+            let secs = secs.unwrap_or(5);
+
+            if secs == 0 {
+                5
+            } else {
+                secs
+            }
+        };
         Self {
             path: url.into(),
             max_size,
@@ -139,7 +148,7 @@ impl Upload {
             content_type,
             controller,
             other_body: other_body.into(),
-            timeout: secs.unwrap_or(5),
+            timeout,
         }
     }
 }
@@ -240,7 +249,7 @@ impl ListResponseController {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", rename_all = "UPPERCASE")]
-pub enum DeleteGetKind {
+pub enum DeleteKeyKind {
     Path,
     Query { key: String },
 }
@@ -249,7 +258,10 @@ pub enum DeleteGetKind {
 #[serde(tag = "type", rename_all = "UPPERCASE")]
 pub enum DeleteMethod {
     Get {
-        kind: DeleteGetKind,
+        kind: DeleteKeyKind,
+    },
+    Delete {
+        kind: DeleteKeyKind,
     },
     Post {
         body: Map<String, Value>,
@@ -356,7 +368,7 @@ impl Api {
         }
     }
 
-    pub fn max_size(&self) -> u64 {
+    pub fn max_size(&self) -> u8 {
         self.upload.max_size
     }
 
@@ -439,11 +451,24 @@ impl BaseApiManager {
         self.api.list.controller.parse(response).await
     }
 
-    async fn delete_by_get(&self, kind: &DeleteGetKind, id: &str) -> Result<Response> {
+    async fn delete_by_delete(&self, kind: &DeleteKeyKind, id: &str) -> Result<Response> {
+        // DELETE 删除认证方式只能是 headers
+        let url = match kind {
+            DeleteKeyKind::Path => self.url(&(self.api.delete.path.to_owned() + id)),
+            DeleteKeyKind::Query { key } => format!(
+                "{}{}?{}={}",
+                self.api.base_url, self.api.delete.path, key, id
+            ),
+        };
+
+        self.inner.delete(&url, self.headers()?).await
+    }
+
+    async fn delete_by_get(&self, kind: &DeleteKeyKind, id: &str) -> Result<Response> {
         // GET 删除认证方式只能是 headers
         let url = match kind {
-            DeleteGetKind::Path => self.url(&(self.api.delete.path.to_owned() + id)),
-            DeleteGetKind::Query { key } => format!(
+            DeleteKeyKind::Path => self.url(&(self.api.delete.path.to_owned() + id)),
+            DeleteKeyKind::Query { key } => format!(
                 "{}{}?{}={}",
                 self.api.base_url, self.api.delete.path, key, id
             ),
@@ -474,6 +499,7 @@ impl BaseApiManager {
     pub async fn delete(&self, id: &str) -> Result<()> {
         let resp = match &self.api.delete.method {
             DeleteMethod::Get { kind } => self.delete_by_get(kind, id).await?,
+            DeleteMethod::Delete { kind } => self.delete_by_delete(kind, id).await?,
             DeleteMethod::Post { body, key } => self.delete_by_post(body, key, id).await?,
         };
 
