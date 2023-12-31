@@ -17,12 +17,23 @@ const SuccessField = ({ value, disabled, onChange }: SuccessFieldProps) => {
   const render = () => {
     switch (selected) {
       case 'string':
-        return <Input onChange={(e) => onChange(e.target.value)} />
+        return (
+          <Input
+            disabled={disabled}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        )
       case 'number':
-        return <InputNumber onChange={(v) => onChange(v!)} />
+        return (
+          <InputNumber disabled={disabled} onChange={(v) => onChange(v!)} />
+        )
       case 'boolean':
         return (
-          <Switch checked={value as boolean | undefined} onChange={onChange} />
+          <Switch
+            disabled={disabled}
+            checked={value as boolean | undefined}
+            onChange={onChange}
+          />
         )
     }
   }
@@ -95,11 +106,11 @@ const Delete = ({
                   method:
                     e.target.value === 'GET'
                       ? {
-                        type: 'GET',
-                        kind: (method as ApiDeleteGetMethod).kind ?? {
-                          type: 'PATH',
-                        },
-                      }
+                          type: 'GET',
+                          kind: (method as ApiDeleteGetMethod).kind ?? {
+                            type: 'PATH',
+                          },
+                        }
                       : { type: 'POST' },
                 },
               },
@@ -170,9 +181,9 @@ const Delete = ({
                   ...data.api.delete,
                   controller: v
                     ? {
-                      ...(controller as ApiDeleteJsonController),
-                      type: 'JSON',
-                    }
+                        ...(controller as ApiDeleteJsonController),
+                        type: 'JSON',
+                      }
                     : { type: 'STATUS' },
                 },
               },

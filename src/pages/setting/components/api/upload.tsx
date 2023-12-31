@@ -141,13 +141,13 @@ const Upload = ({
                   content_type:
                     e.target.value === 'JSON'
                       ? {
-                        ...(content_type as ApiUploadJsonContentType),
-                        type: 'JSON',
-                      }
+                          ...(content_type as ApiUploadJsonContentType),
+                          type: 'JSON',
+                        }
                       : {
-                        ...(content_type as ApiUploadMultipartContentType),
-                        type: 'MULTIPART',
-                      },
+                          ...(content_type as ApiUploadMultipartContentType),
+                          type: 'MULTIPART',
+                        },
                 },
               },
             })
@@ -235,7 +235,8 @@ const Upload = ({
       >
         <Input.TextArea
           placeholder='{"key": "value"}'
-          defaultValue={JSON.stringify(other_body)}
+          value={other_body && JSON.stringify(other_body)}
+          disabled={disabled}
           onChange={(e) => {
             const str = e.target.value.replaceAll('”', '"').replaceAll('“', '"')
             try {

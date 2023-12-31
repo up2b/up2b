@@ -68,8 +68,10 @@ const ApiSetting = ({ code, authConfig, onChange }: ApiSettingProps) => {
       } else {
         setConfig(initApiConfig.api)
       }
+    } else {
+      setConfig(authConfig.api)
     }
-  }, [code, config])
+  }, [code, authConfig])
 
   const disabled = code === 'SMMS'
 

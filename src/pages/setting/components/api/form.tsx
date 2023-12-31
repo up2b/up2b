@@ -10,7 +10,15 @@ interface ApiSettingProps {
 }
 
 const ApiSettingForm = ({ code, authConfig, onChange }: ApiSettingProps) => {
+  const [form] = Form.useForm()
+
   const [config, setConfig] = useState<ApiConfig | undefined>(authConfig?.api)
+
+  useEffect(() => {
+    if (config) {
+      form.resetFields()
+    }
+  }, [code, config])
 
   useEffect(() => {
     if (!authConfig?.api) {
@@ -22,8 +30,10 @@ const ApiSettingForm = ({ code, authConfig, onChange }: ApiSettingProps) => {
       } else {
         setConfig(initApiConfig.api)
       }
+    } else {
+      setConfig(authConfig.api)
     }
-  }, [code, config])
+  }, [code, authConfig])
 
   if (!config) {
     return null
@@ -36,7 +46,7 @@ const ApiSettingForm = ({ code, authConfig, onChange }: ApiSettingProps) => {
   }
 
   return (
-    <Form initialValues={data}>
+    <Form key={code} form={form} initialValues={data}>
       <ApiSetting code={code} authConfig={data} onChange={onChange} />
 
       <Button
