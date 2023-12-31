@@ -154,7 +154,24 @@ const Setting = ({ config, setConfig }: SettingProps) => {
             disableOkButton={
               !(config?.auth_config?.[config.using] as ApiAuthConfig)?.token
             }
-            onOk={onUpdateConfig}
+            onOk={async (apiAuthConfig) => {
+              const newConfig = {
+                ...config!,
+                auth_config: {
+                  ...config!.auth_config,
+                  [apiKey]: apiAuthConfig,
+                },
+              }
+              console.log(newConfig)
+              try {
+                await updateConfig(newConfig)
+                setConfig(newConfig)
+                setDefaultConfig(newConfig)
+                messageApi.success('已保存配置')
+              } catch (e) {
+                messageApi.error(String(e))
+              }
+            }}
           />
         )
       case 'CHEVERETO':

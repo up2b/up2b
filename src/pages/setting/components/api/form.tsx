@@ -11,7 +11,7 @@ import ApiSetting, {
 interface ApiSettingProps {
   code: string
   authConfig?: ApiAuthConfig
-  onOk?: (authConfig: ApiAuthConfig) => void
+  onOk?: (authConfig: ApiAuthConfig) => Promise<void>
   disableCancelButton?: boolean
   disableOkButton?: boolean
 }
@@ -69,9 +69,8 @@ const ApiSettingForm = ({
       }}
       onFinish={(values) => {
         const c = formDataToApiConfig(values.api)
-        console.log(c)
 
-        // onOk?.({ ...values, api: c })
+        onOk?.({ ...values, type: 'API', api: c })
       }}
     >
       <ApiSetting code={code} />
