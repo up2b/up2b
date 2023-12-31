@@ -3,18 +3,12 @@ import { Form, Input, Radio, Space } from 'antd'
 import type { FormRule } from 'antd'
 
 interface AuthMethodProps {
-  data: ApiAuthConfig
+  data: ApiAuthConfigForm
   rules: FormRule[]
   disabled: boolean
-  handleChange: (data: ApiAuthConfig) => void
 }
 
-const AuthMethod = ({
-  data,
-  rules,
-  disabled,
-  handleChange,
-}: AuthMethodProps) => {
+const AuthMethod = ({ data, rules, disabled }: AuthMethodProps) => {
   const name = (...key: string[]) => ['api', 'auth_method', ...key]
 
   return (
@@ -25,28 +19,7 @@ const AuthMethod = ({
         tooltip="请求体只能是 json 类型"
         rules={rules}
       >
-        <Radio.Group
-          value={data.api.auth_method.type}
-          disabled={disabled}
-          onChange={(e) =>
-            handleChange({
-              ...data,
-              api: {
-                ...data.api,
-                auth_method:
-                  e.target.value === 'HEADER'
-                    ? {
-                      ...(data.api.auth_method as AuthHeaderMethod),
-                      type: 'HEADER',
-                    }
-                    : {
-                      ...(data.api.auth_method as AuthBodyMethod),
-                      type: 'BODY',
-                    },
-              },
-            })
-          }
-        >
+        <Radio.Group value={data.api.auth_method.type} disabled={disabled}>
           <Radio value="HEADER">请求头</Radio>
           <Radio value="BODY">请求体</Radio>
         </Radio.Group>
@@ -59,22 +32,7 @@ const AuthMethod = ({
             label="key"
             tooltip="默认 Authorization"
           >
-            <Input
-              placeholder="Authorization"
-              disabled={disabled}
-              onChange={(e) =>
-                handleChange({
-                  ...data,
-                  api: {
-                    ...data.api,
-                    auth_method: {
-                      ...(data.api.auth_method as AuthHeaderMethod),
-                      key: e.target.value,
-                    },
-                  },
-                })
-              }
-            />
+            <Input placeholder="Authorization" disabled={disabled} />
           </Form.Item>
 
           <Form.Item
@@ -86,39 +44,12 @@ const AuthMethod = ({
               value={data.api.auth_method.prefix}
               placeholder="token 前缀"
               disabled={disabled}
-              onChange={(e) =>
-                handleChange({
-                  ...data,
-                  api: {
-                    ...data.api,
-                    auth_method: {
-                      ...(data.api.auth_method as AuthHeaderMethod),
-                      prefix: e.target.value,
-                    },
-                  },
-                })
-              }
             />
           </Form.Item>
         </Space>
       ) : (
         <Form.Item name={name('key')} label="key" rules={rules}>
-          <Input
-            value={data.api.auth_method.key}
-            disabled={disabled}
-            onChange={(e) =>
-              handleChange({
-                ...data,
-                api: {
-                  ...data.api,
-                  auth_method: {
-                    ...(data.api.auth_method as AuthHeaderMethod),
-                    key: e.target.value,
-                  },
-                },
-              })
-            }
-          />
+          <Input value={data.api.auth_method.key} disabled={disabled} />
         </Form.Item>
       )}
     </>

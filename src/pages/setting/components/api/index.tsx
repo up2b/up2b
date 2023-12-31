@@ -9,11 +9,11 @@ import Upload from './upload'
 
 interface ApiSettingProps {
   code: string
-  authConfig?: ApiAuthConfig
-  onChange?: (data: ApiAuthConfig) => void
+  authConfig?: ApiAuthConfigForm
+  onChange?: (data: ApiAuthConfigForm) => void
 }
 
-export const initApiConfig: ApiAuthConfig = {
+export const initApiConfigFormValues: ApiAuthConfigForm = {
   type: 'API',
   token: '',
   api: {
@@ -33,7 +33,7 @@ export const initApiConfig: ApiAuthConfig = {
     delete: {
       path: '',
       method: { type: 'GET', kind: { type: 'PATH' } },
-      controller: { type: 'JSON', key: '', should_be: true },
+      controller: { havaBody: true, type: 'JSON', key: '', should_be: true },
     },
     upload: {
       path: '',
@@ -45,7 +45,7 @@ export const initApiConfig: ApiAuthConfig = {
         file_kind: 'STREAM',
         file_part_name: '',
       },
-      other_body: {},
+      other_body: undefined,
       controller: {
         image_url_key: '',
         deleted_id_key: '',
@@ -54,58 +54,55 @@ export const initApiConfig: ApiAuthConfig = {
   },
 }
 
-const ApiSetting = ({ code, authConfig, onChange }: ApiSettingProps) => {
-  const [token, setToken] = useState<string>(authConfig?.token ?? '')
-  const [config, setConfig] = useState<ApiConfig | undefined>(authConfig?.api)
+export const apiConfigToForm = (
+  config?: ApiConfig,
+): ApiConfigForm | undefined => {
+  if (!config) return undefined
 
-  useEffect(() => {
-    if (!authConfig?.api) {
-      if (code === 'SMMS') {
-        // 第一次配置 smms 时才会获取 smms 示例配置
-        getSmmsConfig().then((c) => {
-          setConfig(c)
-        })
-      } else {
-        setConfig(initApiConfig.api)
-      }
-    } else {
-      setConfig(authConfig.api)
-    }
-  }, [code, authConfig])
-
-  const disabled = code === 'SMMS'
-
-  const handleChange = (data: ApiAuthConfig) => {
-    setToken(data.token)
-    setConfig(data.api)
-
-    onChange?.(data)
+  return {
+    ...config,
+    delete: {
+      ...config.delete,
+      controller:
+        config.delete.controller.type === 'JSON'
+          ? { ...config.delete.controller, havaBody: true }
+          : { havaBody: false, type: 'STATUS' },
+    },
+    upload: {
+      ...config.upload,
+      other_body: config.upload.other_body
+        ? JSON.stringify(config.upload.other_body)
+        : undefined,
+    },
   }
+}
 
+export const formDataToApiConfig = (formData: ApiConfigForm): ApiConfig => {
+  const other_body = formData.upload.other_body
+    ? JSON.parse(formData.upload.other_body)
+    : undefined
+  return {
+    ...formData,
+    upload: {
+      ...formData.upload,
+      other_body,
+    },
+  }
+}
+
+const ApiSetting = ({ code, authConfig, onChange }: ApiSettingProps) => {
   const rules: FormRule[] = [{ required: true }]
   const pathRules: FormRule[] = [
     ...rules,
     { type: 'string', warningOnly: true, pattern: /^\/\w+\/?$/ },
   ]
 
-  if (!config) {
-    return null
-  }
-
-  const data: ApiAuthConfig = {
-    type: 'API',
-    token,
-    api: config,
-  }
+  const disabled = code === 'SMMS'
 
   return (
     <>
       <Form.Item name="token" label="TOKEN" rules={rules}>
-        <Input.Password
-          placeholder="输入 token"
-          value={token ?? ''}
-          onChange={(e) => handleChange({ ...data, token: e.target.value })}
-        />
+        <Input.Password placeholder="输入 token" />
       </Form.Item>
 
       <Form.Item
@@ -113,52 +110,34 @@ const ApiSetting = ({ code, authConfig, onChange }: ApiSettingProps) => {
         label="接口"
         rules={[...rules, { type: 'url', warningOnly: true }]}
       >
-        <Input
-          placeholder="输入接口"
-          disabled={disabled}
-          // value={data.api.base_url}
-          onChange={(e) =>
-            handleChange({
-              ...data,
-              api: { ...data.api, base_url: e.target.value },
-            })
-          }
-        />
+        <Input placeholder="输入接口" disabled={disabled} />
       </Form.Item>
 
       <Divider>认证方式</Divider>
-      <AuthMethod
-        data={data}
-        rules={rules}
-        disabled={disabled}
-        handleChange={handleChange}
-      />
+      <AuthMethod data={authConfig} rules={rules} disabled={disabled} />
 
       <Divider>图片列表</Divider>
       <ImageList
-        data={data}
+        data={authConfig}
         rules={rules}
         pathRules={pathRules}
         disabled={disabled}
-        handleChange={handleChange}
       />
 
       <Divider>删除</Divider>
       <Delete
-        data={data}
+        data={authConfig}
         rules={rules}
         pathRules={pathRules}
         disabled={disabled}
-        handleChange={handleChange}
       />
 
       <Divider>上传</Divider>
       <Upload
-        data={data}
+        data={authConfig}
         rules={rules}
         pathRules={pathRules}
         disabled={disabled}
-        handleChange={handleChange}
       />
     </>
   )

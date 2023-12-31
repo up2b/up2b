@@ -127,8 +127,34 @@ interface ApiUploadConfig {
   other_body?: Record<string, any>
 }
 
-type ApiDeleteControllerForm = {
-  [K in keyof ApiDeleteController]: K extends 'type'
-  ? string | boolean
-  : ApiDeleteController[K]
+interface ApiDeleteStatusControllerForm extends ApiDeleteStatusController {
+  havaBody: false
+}
+
+interface ApiDeleteJsonControllerForm extends ApiDeleteJsonController {
+  havaBody: true
+}
+
+type ApiDeleteControllerForm =
+  | ApiDeleteJsonControllerForm
+  | ApiDeleteStatusControllerForm
+
+interface ApiDeleteConfigForm extends Omit<ApiDeleteConfig, 'controller'> {
+  controller: ApiDeleteControllerForm
+}
+
+interface ApiUploadConfigForm extends Omit<ApiUploadConfig, ' other_body'> {
+  other_body?: string
+}
+
+interface ApiConfigForm {
+  base_url: string
+  auth_method: AuthMethod
+  list: ApiListConfig
+  delete: ApiDeleteConfigForm
+  upload: ApiUploadConfigForm
+}
+
+interface ApiAuthConfigForm extends Omit<ApiAuthConfig, 'api'> {
+  api: ApiConfigForm
 }

@@ -59,7 +59,6 @@ const Setting = ({ config, setConfig }: SettingProps) => {
     }
 
     getImageBeds().then((r) => {
-      console.log(r)
       setImageBeds(r)
     })
 
@@ -103,7 +102,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
   const onUpdateConfig = async () => {
     if (!config) return
 
-    // 删除非 USING 图床 keys 数量等于 1 的配置
+    // 删除非 USING 图床 keys 数量等于 1 的配置(只一个 type)
     for (const k in config.auth_config) {
       if (
         k !== config.using &&
@@ -153,28 +152,9 @@ const Setting = ({ config, setConfig }: SettingProps) => {
             authConfig={config?.auth_config?.[apiKey]}
             disableCancelButton={areObjectsEqual(defaultConfig, config)}
             disableOkButton={
-              (filterImageBed()?.type === 'API'
-                ? !(config?.auth_config?.[config.using] as ApiAuthConfig)?.token
-                : !(config?.auth_config?.[config.using] as CheveretoAuthConfig)
-                    ?.username ||
-                  !(config?.auth_config?.[config.using] as CheveretoAuthConfig)
-                    ?.password) || areObjectsEqual(defaultConfig, config)
+              !(config?.auth_config?.[config.using] as ApiAuthConfig)?.token
             }
             onOk={onUpdateConfig}
-            onChange={(data) => {
-              console.log(data)
-              setConfig((pre) => ({
-                ...pre!,
-                auth_config: {
-                  ...config?.auth_config,
-                  [apiKey]: {
-                    type: 'API',
-                    token: data.token,
-                    api: data.api,
-                  },
-                },
-              }))
-            }}
           />
         )
       case 'CHEVERETO':
@@ -231,8 +211,6 @@ const Setting = ({ config, setConfig }: SettingProps) => {
     }
   }
 
-  console.log(config)
-
   return (
     <div id="setting">
       {contextHolder}
@@ -282,16 +260,16 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                     pre
                       ? { ...pre, using: v }
                       : {
-                          using: v,
-                          use_proxy: false,
-                          automatic_compression: false,
-                          auth_config: {
-                            [v]: {
-                              type: imageBeds.find((item) => item.key === v)
-                                ?.type,
-                            },
+                        using: v,
+                        use_proxy: false,
+                        automatic_compression: false,
+                        auth_config: {
+                          [v]: {
+                            type: imageBeds.find((item) => item.key === v)
+                              ?.type,
                           },
                         },
+                      },
                   )
                 }
                 dropdownRender={(menu) => (
@@ -346,18 +324,18 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                     disabled={
                       (filterImageBed()?.type === 'API'
                         ? !(
-                            config?.auth_config?.[config.using] as ApiAuthConfig
-                          )?.token
+                          config?.auth_config?.[config.using] as ApiAuthConfig
+                        )?.token
                         : !(
-                            config?.auth_config?.[
-                              config.using
-                            ] as CheveretoAuthConfig
-                          )?.username ||
-                          !(
-                            config?.auth_config?.[
-                              config.using
-                            ] as CheveretoAuthConfig
-                          )?.password) || areObjectsEqual(defaultConfig, config)
+                          config?.auth_config?.[
+                          config.using
+                          ] as CheveretoAuthConfig
+                        )?.username ||
+                        !(
+                          config?.auth_config?.[
+                          config.using
+                          ] as CheveretoAuthConfig
+                        )?.password) || areObjectsEqual(defaultConfig, config)
                     }
                   >
                     {verifying ? '验证中...' : '保存'}

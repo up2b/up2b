@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Form, Input, Modal, Space } from 'antd'
-import ApiSetting, { initApiConfig } from './api'
+import ApiSetting, { initApiConfigFormValues } from './api'
 import { CheckOutlined } from '@ant-design/icons'
 import { newCustomManager } from '~/lib'
 
@@ -16,7 +16,7 @@ const ApiSettingForm = ({ code, onSubmit, onCancel }: ApiSettingFormProps) => {
   return (
     <Form
       form={form}
-      initialValues={initApiConfig}
+      initialValues={initApiConfigFormValues}
       onFinish={(values) => {
         const apiAuthConfig = { type: 'API', ...values }
         onSubmit(apiAuthConfig)
@@ -39,16 +39,16 @@ const ApiSettingForm = ({ code, onSubmit, onCancel }: ApiSettingFormProps) => {
         key="submit"
         type="primary"
         htmlType="submit"
-      // disabled={disableOkButton}
-      // onClick={async () => {
-      //   console.log(form.getFieldsError())
-      //   // console.log(await form.validateFields())
-      //   // form.isFieldsValidating()
-      //
-      //   console.log(authConfig)
-      //   // newCustomManager('CUSTOM-' + code.code, authConfig!)
-      //   onOk()
-      // }}
+        // disabled={disableOkButton}
+        // onClick={async () => {
+        //   console.log(form.getFieldsError())
+        //   // console.log(await form.validateFields())
+        //   // form.isFieldsValidating()
+        //
+        //   console.log(authConfig)
+        //   // newCustomManager('CUSTOM-' + code.code, authConfig!)
+        //   onOk()
+        // }}
       >
         确认
       </Button>
@@ -94,10 +94,10 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
           code.checked
             ? []
             : [
-              <Button key="cancel" type="default" onClick={onCancel}>
-                取消
-              </Button>,
-            ]
+                <Button key="cancel" type="default" onClick={onCancel}>
+                  取消
+                </Button>,
+              ]
         }
       >
         {code.checked ? (
@@ -105,7 +105,7 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
             code={code.code}
             onCancel={onCancel}
             onSubmit={(data) => {
-              console.log(initApiConfig)
+              console.log(initApiConfigFormValues)
               console.log(data)
               if (
                 (data.api.delete.controller as ApiDeleteControllerForm).type

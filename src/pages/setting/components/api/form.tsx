@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { Form, Button, Space } from 'antd'
 import { getSmmsConfig } from '~/lib/api'
-import ApiSetting, { initApiConfig } from '.'
+import ApiSetting, {
+  initApiConfigFormValues,
+  apiConfigToForm,
+  formDataToApiConfig,
+} from '.'
 
 interface ApiSettingProps {
   code: string
   authConfig?: ApiAuthConfig
-  onChange?: (data: ApiAuthConfig) => void
-  onOk?: () => void
+  onOk?: (authConfig: ApiAuthConfig) => void
   disableCancelButton?: boolean
   disableOkButton?: boolean
 }
@@ -15,14 +18,15 @@ interface ApiSettingProps {
 const ApiSettingForm = ({
   code,
   authConfig,
-  onChange,
   onOk,
   disableCancelButton,
   disableOkButton,
 }: ApiSettingProps) => {
   const [form] = Form.useForm()
 
-  const [config, setConfig] = useState<ApiConfig | undefined>(authConfig?.api)
+  const [config, setConfig] = useState<ApiConfigForm | undefined>(
+    apiConfigToForm(authConfig?.api),
+  )
 
   useEffect(() => {
     if (config) {
@@ -35,13 +39,13 @@ const ApiSettingForm = ({
       if (code === 'SMMS') {
         // 第一次配置 smms 时才会获取 smms 示例配置
         getSmmsConfig().then((c) => {
-          setConfig(c)
+          setConfig(apiConfigToForm(c))
         })
       } else {
-        setConfig(initApiConfig.api)
+        setConfig(initApiConfigFormValues.api)
       }
     } else {
-      setConfig(authConfig.api)
+      setConfig(apiConfigToForm(authConfig.api))
     }
   }, [code, authConfig])
 
@@ -49,15 +53,24 @@ const ApiSettingForm = ({
     return null
   }
 
-  const data: ApiAuthConfig = {
+  const formData: ApiAuthConfigForm = {
     type: 'API',
     token: authConfig?.token ?? '',
     api: config,
   }
 
   return (
-    <Form form={form} initialValues={data} onFinish={onOk}>
-      <ApiSetting code={code} authConfig={data} onChange={onChange} />
+    <Form
+      form={form}
+      initialValues={formData}
+      onFinish={(values) => {
+        const c = formDataToApiConfig(values.api)
+        console.log(c)
+
+        onOk()
+      }}
+    >
+      <ApiSetting code={code} authConfig={formData} />
 
       <Form.Item
         style={{
