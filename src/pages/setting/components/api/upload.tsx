@@ -32,17 +32,28 @@ const Upload = ({ rules, pathRules, disabled }: UploadProps) => {
         <Input placeholder="输入上传图片接口路径" disabled={disabled} />
       </Form.Item>
 
-      <Form.Item label="最大体积" name={name('max_size')} rules={rules}>
-        <InputNumber
-          placeholder="输入允许的最大体积"
-          disabled={disabled}
-          addonAfter="MB"
-        />
-      </Form.Item>
+      <Space wrap>
+        <Form.Item
+          label="最大体积"
+          name={name('max_size')}
+          rules={rules}
+          style={{ maxWidth: 240 }}
+        >
+          <InputNumber
+            placeholder="输入允许的最大体积"
+            disabled={disabled}
+            addonAfter="MB"
+          />
+        </Form.Item>
 
-      <Form.Item label="超时时间" name={name('timeout')}>
-        <InputNumber disabled={disabled} min={0} addonAfter="秒" />
-      </Form.Item>
+        <Form.Item
+          label="超时时间"
+          name={name('timeout')}
+          style={{ maxWidth: 240 }}
+        >
+          <InputNumber disabled={disabled} min={0} addonAfter="秒" />
+        </Form.Item>
+      </Space>
 
       <Form.Item
         label="允许的格式"
