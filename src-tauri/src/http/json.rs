@@ -94,10 +94,9 @@ pub async fn upload<S: Into<Option<u64>>>(
         }
     };
 
-    let resp = builder
-        .timeout(Duration::from_secs(seconds.into().unwrap_or(5)))
-        .send()
-        .await?;
+    let timeout_duration = Duration::from_secs(seconds.into().unwrap_or(5));
+
+    let resp = builder.timeout(timeout_duration).send().await?;
 
     Ok(resp)
 }

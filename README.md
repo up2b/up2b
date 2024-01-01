@@ -72,3 +72,11 @@ SUBCOMMANDS:
 ![截屏2023-12-15 22.25.54](https://s2.loli.net/2023/12/15/i7gSByjX4FtmKxv.png)
 
 就可以直接上传图片了。
+
+## 已知问题
+
+### 1 Windows 平台中无法使用 CLI
+
+因为 Windows 中的程序被标记为 GUI，在启动时系统不会为 GUI 程序打开控制台，需要单独适配 Windows 的控制台。
+
+https://github.com/tauri-apps/tauri/issues/8305
