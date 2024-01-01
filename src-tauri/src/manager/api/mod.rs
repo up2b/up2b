@@ -521,6 +521,8 @@ impl BaseApiManager {
     ) -> Result<UploadResult> {
         let headers = self.headers()?;
 
+        debug!("超时时间：{}", self.api.upload.timeout);
+
         let response = match &self.api.upload.content_type {
             UploadContentType::Json { key } => {
                 self.inner
@@ -557,6 +559,8 @@ impl BaseApiManager {
         };
 
         let image_item = self.api.upload.controller.parse(response).await?;
+
+        info!("上传成功：{:?}", image_item);
 
         Ok(UploadResult::Response(image_item))
     }

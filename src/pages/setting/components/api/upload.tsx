@@ -29,7 +29,7 @@ const Upload = ({ rules, pathRules, disabled }: UploadProps) => {
   return (
     <>
       <Form.Item label="路径" name={name('path')} rules={pathRules}>
-        <Input placeholder="输入上传图片接口路径" disabled={disabled} />
+        <Input placeholder="上传图片接口路径，如 /upload" disabled={disabled} />
       </Form.Item>
 
       <Space wrap>
@@ -40,7 +40,7 @@ const Upload = ({ rules, pathRules, disabled }: UploadProps) => {
           style={{ maxWidth: 240 }}
         >
           <InputNumber
-            placeholder="输入允许的最大体积"
+            placeholder="允许的最大体积"
             disabled={disabled}
             addonAfter="MB"
           />
@@ -116,7 +116,29 @@ const Upload = ({ rules, pathRules, disabled }: UploadProps) => {
       <Form.Item
         label="其他表单值"
         name={name('other_body')}
-        help="json 格式字符串，全角引号会自动替换为半角"
+        extra="json 格式字符串，中文的单双引号会自动转换为英文双引号"
+        normalize={(value: string | undefined) => {
+          if (!value) return undefined
+          return value
+            .replaceAll("'", '"')
+            .replaceAll('‘', '"')
+            .replaceAll('’', '"')
+            .replaceAll('“', '"')
+            .replaceAll('”', '"')
+        }}
+        rules={[
+          () => ({
+            validator(_, value) {
+              if (!value) return Promise.resolve()
+              try {
+                JSON.parse(value)
+                return Promise.resolve()
+              } catch (e) {
+                return Promise.reject('格式不正确')
+              }
+            },
+          }),
+        ]}
       >
         <Input.TextArea placeholder='{"key": "value"}' disabled={disabled} />
       </Form.Item>

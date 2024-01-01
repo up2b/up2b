@@ -22,8 +22,21 @@ const ApiSettingForm = ({ code, onSubmit, onCancel }: ApiSettingFormProps) => {
       <Form
         form={form}
         initialValues={initApiConfigFormValues}
-        onFinish={(values) => {
-          const apiAuthConfig = { type: 'API', ...values }
+        onFinish={(values: ApiAuthConfigForm) => {
+          const apiAuthConfig: ApiAuthConfig = {
+            ...values,
+            type: 'API',
+            api: {
+              ...values.api,
+              upload: {
+                ...values.api.upload,
+                max_size: values.api.upload.max_size!,
+                other_body: values.api.upload.other_body
+                  ? JSON.parse(values.api.upload.other_body)
+                  : null,
+              },
+            },
+          }
           onSubmit(apiAuthConfig)
         }}
         onFinishFailed={() => messageApi.error('一些配置项有错误，请检查')}

@@ -127,8 +127,10 @@ interface ApiUploadConfig {
   other_body?: Record<string, any>
 }
 
-interface ApiUploadConfigForm extends Omit<ApiUploadConfig, ' other_body'> {
+interface ApiUploadConfigForm
+  extends Omit<ApiUploadConfig, ' other_body' | 'max_size'> {
   other_body?: string
+  max_size?: number
 }
 
 interface ApiConfigForm {

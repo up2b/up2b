@@ -34,8 +34,8 @@ export const initApiConfigFormValues: ApiAuthConfigForm = {
     },
     upload: {
       path: '',
-      max_size: 0,
-      timeout: 0,
+      max_size: undefined,
+      timeout: 5,
       allowed_formats: ['PNG', 'JPEG', 'GIF'],
       content_type: {
         type: 'MULTIPART',
@@ -75,6 +75,7 @@ export const formDataToApiConfig = (formData: ApiConfigForm): ApiConfig => {
     ...formData,
     upload: {
       ...formData.upload,
+      max_size: formData.upload.max_size!,
       other_body,
     },
   }
