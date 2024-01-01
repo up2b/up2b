@@ -208,6 +208,8 @@ impl ListResponseController {
             _ => return Err(Error::Other("通过 items_key 无法获取列表".to_owned())),
         };
 
+        println!("{:?}", items);
+
         let mut images = Vec::with_capacity(items.len());
 
         for item in items.iter() {
@@ -227,10 +229,12 @@ impl ListResponseController {
                     thumb: None,
                 },
                 Some(k) => {
-                    let thumb = match json.get_value_by_keys(k) {
+                    let thumb = match item.get_value_by_keys(k) {
                         Value::String(s) => Some(s),
                         _ => None,
                     };
+
+                    debug!("thumb: key={} value={:?}", k, thumb);
 
                     ImageItem {
                         url,
@@ -242,6 +246,8 @@ impl ListResponseController {
 
             images.push(image_item);
         }
+
+        debug!("图片列表：{:?}", images);
 
         Ok(images)
     }
