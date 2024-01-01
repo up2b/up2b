@@ -32,7 +32,7 @@ impl Imgse {
                 "https://imgse.com/",
                 username,
                 password,
-                10 * 1024 * 1024,
+                10,
                 FileKind::Buffer,
                 vec![
                     AllowedImageFormat::Jpeg,
@@ -54,7 +54,7 @@ impl Manage for Imgse {
     }
 
     fn support_stream(&self) -> bool {
-        self.inner.manager.file_kind == FileKind::Stream
+        self.inner.file_kind == FileKind::Stream
     }
 
     async fn verify(&self) -> Result<Option<Extra>> {

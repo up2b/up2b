@@ -1,17 +1,23 @@
+pub mod api;
 pub mod chevereto;
 pub mod smms;
 
 use async_trait::async_trait;
+use base64::{engine::general_purpose, Engine as _};
 use reqwest::{header::HeaderMap, Client, Method, RequestBuilder, Response};
-use serde::{Deserialize, Serialize};
+use serde::{de::Visitor, Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display, path::Path};
 use tauri::Window;
-use tokio::fs::File;
+use tokio::fs::{read, File};
 
 use crate::{
     config::ManagerAuthConfigKind,
     error::{ConfigError, Error},
-    http::multipart::{upload, FileKind, UploadFile},
+    http::{
+        json,
+        multipart::{upload, FileKind, UploadFile},
+    },
     util::image::guess_mime_type_by_ext,
     Result,
 };
@@ -19,6 +25,7 @@ use crate::{
 use {crate::config::CONFIG, crate::util::image::compress::compress};
 
 use self::{
+    api::BaseApiManager,
     chevereto::{Imgse, Imgtg},
     smms::SmMs,
 };
@@ -80,7 +87,7 @@ pub trait Manage: Sync + Send {
     ) -> UploadResult;
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum AllowedImageFormat {
     Jpeg,
@@ -92,7 +99,7 @@ pub enum AllowedImageFormat {
 }
 
 #[cfg(feature = "compress")]
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CompressedFormat {
     JPEG,
     WEBP,
@@ -104,7 +111,7 @@ pub fn use_manager(
 ) -> Result<Box<dyn Manage>> {
     let uploader: Box<dyn Manage> = match using {
         ManagerCode::Smms => match auth_config {
-            ManagerAuthConfigKind::API { token } => {
+            ManagerAuthConfigKind::API { token, .. } => {
                 let manager = SmMs::new(token.to_string());
                 Box::new(manager)
             }
@@ -131,6 +138,21 @@ pub fn use_manager(
                 Box::new(imgtg)
             }
             _ => return Err(Error::Config(ConfigError::Type("imgtg.com".to_string()))),
+        },
+        ManagerCode::Custom(s) => match auth_config {
+            ManagerAuthConfigKind::API { token, api } => {
+                let manager = BaseManager::new(
+                    s,
+                    api.max_size(),
+                    api.allowed_formats().to_vec(),
+                    #[cfg(feature = "compress")]
+                    api.compressed_format().clone(),
+                );
+                let custom = BaseApiManager::new(manager, token, api);
+
+                Box::new(custom)
+            }
+            _ => return Err(Error::Config(ConfigError::Type(s.to_string()))),
         },
     };
 
@@ -160,13 +182,10 @@ async fn is_exceeded(
 }
 
 #[derive(Debug, Clone)]
-struct BaseManager {
+pub(crate) struct BaseManager {
     name: String,
-    base_url: String,
-    max_size: u64,
+    max_size: u8,
     client: Client,
-    file_part_name: String,
-    file_kind: FileKind,
     allowed_formats: Vec<AllowedImageFormat>,
     #[cfg(feature = "compress")]
     compressed_format: CompressedFormat,
@@ -175,19 +194,13 @@ struct BaseManager {
 impl BaseManager {
     fn new<S: Into<String>>(
         name: S,
-        base_url: S,
-        max_size: u64,
-        file_part_name: S,
-        file_kind: FileKind,
+        max_size: u8,
         allowed_formats: Vec<AllowedImageFormat>,
         #[cfg(feature = "compress")] compressed_format: CompressedFormat,
     ) -> Self {
         Self {
             name: name.into(),
-            base_url: base_url.into(),
             max_size,
-            file_part_name: file_part_name.into(),
-            file_kind,
             client: Client::new(),
             allowed_formats,
             #[cfg(feature = "compress")]
@@ -201,8 +214,26 @@ impl BaseManager {
         Ok(resp)
     }
 
+    async fn delete(&self, url: &str, headers: HeaderMap) -> Result<Response> {
+        let resp = self.request(Method::DELETE, url, headers).send().await?;
+
+        Ok(resp)
+    }
+
     async fn post(&self, url: &str, headers: HeaderMap) -> Result<Response> {
         let resp = self.request(Method::POST, url, headers).send().await?;
+
+        Ok(resp)
+    }
+
+    async fn json<T: Serialize>(&self, url: &str, headers: HeaderMap, body: T) -> Result<Response> {
+        let resp = self
+            .client
+            .post(url)
+            .headers(headers)
+            .json(&body)
+            .send()
+            .await?;
 
         Ok(resp)
     }
@@ -220,19 +251,21 @@ impl BaseManager {
     ) -> Result<File> {
         let file_size = file.metadata().await?.len();
 
+        let max_size = u64::from(self.max_size) * 1024 * 1024;
+
         #[cfg(not(feature = "compress"))]
-        is_exceeded(&self.name, image_path, self.max_size, file_size).await?;
+        is_exceeded(&self.name, image_path, max_size, file_size).await?;
 
         #[cfg(feature = "compress")]
         let file = {
             let config = CONFIG.read().await.clone().unwrap();
             if !config.automatic_compression() {
-                is_exceeded(&self.name, image_path, self.max_size, file_size).await?;
+                is_exceeded(&self.name, image_path, max_size, file_size).await?;
             }
 
             compress(
                 window,
-                self.max_size,
+                max_size,
                 file_size,
                 filename,
                 file,
@@ -244,6 +277,97 @@ impl BaseManager {
         Ok(file)
     }
 
+    async fn upload_json(
+        &self,
+        window: Option<Window>,
+        id: u32,
+        url: &str,
+        header: HeaderMap,
+        key: &str,
+        image_path: &Path,
+        form: Option<&[(&str, &str)]>,
+        timeout: u64,
+    ) -> Result<Response> {
+        // TODO: base64 上传对体积的限制待处理
+        let file_data = read(image_path).await?;
+        let file_data = general_purpose::STANDARD.encode(file_data);
+
+        let mut body = serde_json::json!(form);
+
+        match body {
+            serde_json::Value::Null => {
+                let mut map = Map::new();
+                map.insert(key.to_owned(), Value::String(file_data));
+
+                body = Value::Object(map);
+            }
+            serde_json::Value::Object(mut map) => {
+                map.insert(key.to_owned(), Value::String(file_data));
+
+                body = Value::Object(map);
+            }
+            _ => return Err(Error::Other("错误的类型".to_owned())),
+        };
+
+        let builder = self.request(Method::POST, url, header);
+
+        let resp = json::upload(builder, window.as_ref(), body, id, timeout).await?;
+
+        Ok(resp)
+    }
+
+    async fn upload_multipart(
+        &self,
+        window: Option<Window>,
+        id: u32,
+        url: &str,
+        header: HeaderMap,
+        image_path: &Path,
+        file_part_name: &str,
+        file_kind: &FileKind,
+        form: Option<&[(&str, &str)]>,
+        timeout: u64,
+    ) -> Result<Response> {
+        let file = File::open(&image_path).await?;
+        let filename = image_path.file_name().unwrap().to_str().unwrap();
+
+        let file = self
+            .compress(
+                #[cfg(feature = "compress")]
+                window.as_ref(),
+                file,
+                image_path,
+                #[cfg(feature = "compress")]
+                filename,
+            )
+            .await?;
+
+        let mime_type = guess_mime_type_by_ext(image_path.extension().unwrap().to_str().unwrap());
+
+        debug!("guess mime type: {}", mime_type);
+
+        let response = upload(
+            &self.client,
+            window.as_ref(),
+            url,
+            header,
+            id,
+            file_part_name,
+            filename,
+            UploadFile::new(file, file_kind),
+            &mime_type,
+            form,
+            timeout,
+        )
+        .await
+        .map_err(|e| {
+            error!("上传图片出错：{}", e);
+            e
+        })?;
+
+        Ok(response)
+    }
+
     async fn upload(
         &self,
         window: Option<Window>,
@@ -251,6 +375,8 @@ impl BaseManager {
         url: &str,
         header: HeaderMap,
         image_path: &Path,
+        file_kind: &FileKind,
+        file_part_name: &str,
         form: Option<&[(&str, &str)]>,
     ) -> Result<Response> {
         let file = File::open(&image_path).await?;
@@ -272,13 +398,14 @@ impl BaseManager {
         debug!("guess mime type: {}", mime_type);
 
         let response = upload(
+            &self.client,
             window.as_ref(),
             url,
             header,
             id,
-            &self.file_part_name,
+            file_part_name,
             filename,
-            UploadFile::new(file, &self.file_kind),
+            UploadFile::new(file, file_kind),
             &mime_type,
             form,
             60,
@@ -293,19 +420,76 @@ impl BaseManager {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum ManagerKind {
     API,
     Chevereto,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
-#[serde(rename_all = "UPPERCASE")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ManagerCode {
-    Smms,
+    Smms, // 内置 smms 支持，与 Custom
     Imgse,
     Imgtg,
+    Custom(String),
+}
+
+impl Serialize for ManagerCode {
+    fn serialize<S>(&self, serializer: S) -> std::prelude::v1::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            ManagerCode::Smms => serializer.serialize_str("SMMS"),
+            ManagerCode::Imgse => serializer.serialize_str("IMGSE"),
+            ManagerCode::Imgtg => serializer.serialize_str("IMGTG"),
+            ManagerCode::Custom(s) => {
+                serializer.serialize_str(&format!("CUSTOM-{}", s.to_uppercase()))
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for ManagerCode {
+    fn deserialize<D>(deserializer: D) -> std::prelude::v1::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct ManagerCodeVisitor;
+
+        impl<'de> Visitor<'de> for ManagerCodeVisitor {
+            type Value = ManagerCode;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a string representing ManagerCode")
+            }
+
+            fn visit_str<E>(self, value: &str) -> std::prelude::v1::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                if value.starts_with("CUSTOM-") {
+                    // If the value is "CUSTOM", parse it as Custom
+                    let custom_value = value.trim_start_matches("CUSTOM-").to_string();
+                    Ok(ManagerCode::Custom(custom_value))
+                } else {
+                    // Otherwise, convert the value to uppercase and try to match it with enum variants
+                    match value.to_uppercase().as_str() {
+                        "SMMS" => Ok(ManagerCode::Smms),
+                        "IMGSE" => Ok(ManagerCode::Imgse),
+                        "IMGTG" => Ok(ManagerCode::Imgtg),
+                        _ => Err(serde::de::Error::unknown_variant(
+                            value,
+                            &["SMMS", "IMGSE", "IMGTG", "CUSTOM"],
+                        )),
+                    }
+                }
+            }
+        }
+
+        deserializer.deserialize_str(ManagerCodeVisitor)
+    }
 }
 
 impl Display for ManagerCode {
@@ -320,28 +504,30 @@ impl Default for ManagerCode {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ManagerItem {
     pub key: ManagerCode,
-    pub name: &'static str,
-    pub index: &'static str,
+    pub name: String,
+    pub index: Option<&'static str>,
     pub r#type: ManagerKind,
 }
 
 impl ManagerCode {
-    pub fn name(&self) -> &'static str {
+    pub fn name(&self) -> String {
         match self {
-            ManagerCode::Smms => "sm.ms",
-            ManagerCode::Imgse => "imgse.com",
-            ManagerCode::Imgtg => "imgtg.com",
+            ManagerCode::Smms => "sm.ms".to_owned(),
+            ManagerCode::Imgse => "imgse.com".to_owned(),
+            ManagerCode::Imgtg => "imgtg.com".to_owned(),
+            ManagerCode::Custom(s) => "CUSTOM-".to_owned() + s,
         }
     }
 
-    pub fn index(&self) -> &'static str {
+    pub fn index(&self) -> Option<&'static str> {
         match self {
-            ManagerCode::Smms => "https://sm.ms",
-            ManagerCode::Imgse => "https://imgse.com",
-            ManagerCode::Imgtg => "https://imgtg.com",
+            ManagerCode::Smms => Some("https://sm.ms"),
+            ManagerCode::Imgse => Some("https://imgse.com"),
+            ManagerCode::Imgtg => Some("https://imgtg.com"),
+            _ => None,
         }
     }
 
@@ -364,6 +550,12 @@ impl ManagerCode {
                 index: self.index(),
                 key: self,
                 r#type: ManagerKind::Chevereto,
+            },
+            ManagerCode::Custom(ref s) => ManagerItem {
+                name: s.clone(),
+                index: None,
+                key: self,
+                r#type: ManagerKind::API,
             },
         }
     }

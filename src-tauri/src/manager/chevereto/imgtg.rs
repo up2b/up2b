@@ -32,7 +32,7 @@ impl Imgtg {
                 "https://img.tg/",
                 username,
                 password,
-                5 * 1024 * 1024,
+                5,
                 FileKind::Stream,
                 vec![
                     AllowedImageFormat::Jpeg,
@@ -56,7 +56,7 @@ impl Manage for Imgtg {
     }
 
     fn support_stream(&self) -> bool {
-        self.inner.manager.file_kind == FileKind::Stream
+        self.inner.file_kind == FileKind::Stream
     }
 
     async fn verify(&self) -> Result<Option<Extra>> {

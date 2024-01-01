@@ -16,6 +16,8 @@ extern crate lazy_static;
 extern crate simplelog;
 
 use error::AuthConfigError;
+use manager::api::Api;
+use manager::smms::SMMS_API;
 use manager::ManagerItem;
 use simplelog::CombinedLogger;
 #[cfg(not(debug_assertions))]
@@ -52,6 +54,25 @@ async fn using_manager() -> Result<Box<dyn Manage>> {
 }
 
 #[tauri::command]
+async fn get_managers() -> Vec<ManagerItem> {
+    let conf = CONFIG.read().await;
+    let conf = conf.clone();
+
+    let mut managers = MANAGERS.to_vec();
+
+    if let Some(c) = conf {
+        let auth_config = c.auth_config();
+        for key in auth_config.keys() {
+            if let ManagerCode::Custom(_) = key {
+                managers.push(key.clone().to_manager_item());
+            }
+        }
+    }
+
+    managers
+}
+
+#[tauri::command]
 async fn get_all_images() -> Result<Vec<ImageItem>> {
     trace!("获取图片列表");
 
@@ -85,15 +106,16 @@ async fn verify(image_bed: ManagerCode, config: ManagerAuthConfigKind) -> Result
 }
 
 #[tauri::command]
-fn get_image_beds() -> &'static [ManagerItem] {
-    MANAGERS.as_ref()
+async fn get_config() -> Option<Config> {
+    let conf = CONFIG.read().await;
+
+    conf.clone()
 }
 
 #[tauri::command]
-async fn get_config() -> Option<Config> {
-    let config = CONFIG.read().await;
-
-    config.clone()
+async fn smms_config() -> Api {
+    // 如果没有配置文件，将 smms 示例添加到配置中
+    SMMS_API.clone()
 }
 
 #[tauri::command]
@@ -155,6 +177,34 @@ async fn automatic_compression() -> bool {
         .automatic_compression()
 }
 
+#[tauri::command]
+async fn new_custom_manager(
+    manager_code: ManagerCode,
+    auth_config: ManagerAuthConfigKind,
+) -> Result<()> {
+    let mut conf = CONFIG.write().await;
+
+    let mut config = match conf.take() {
+        Some(c) => {
+            let auth_configs = c.auth_config().clone();
+            if auth_configs.contains_key(&manager_code) {
+                return Err(Error::CustomUnique(manager_code));
+            }
+            c
+        }
+        None => Config::default(),
+    };
+
+    config.insert_auth_config(manager_code.clone(), auth_config);
+    config.set_using(manager_code);
+
+    write_config(&config)?;
+
+    *conf = Some(config);
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
     CombinedLogger::init(vec![
@@ -196,7 +246,6 @@ async fn main() {
             get_all_images,
             delete_image,
             upload_image,
-            get_image_beds,
             get_config,
             update_config,
             compress_state,
@@ -206,6 +255,9 @@ async fn main() {
             allowed_formats,
             toggle_manager,
             automatic_compression,
+            smms_config,
+            get_managers,
+            new_custom_manager,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

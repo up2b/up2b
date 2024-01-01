@@ -142,6 +142,9 @@ fn unquote(text: &str) -> String {
 pub struct Chevereto {
     manager: BaseManager,
     code: ManagerCode,
+    base_url: String,
+    file_kind: FileKind,
+    file_part_name: String,
     username: String,
     password: String,
     token: Option<String>,
@@ -155,7 +158,7 @@ impl Chevereto {
         base_url: &str,
         username: S,
         password: S,
-        max_size: u64,
+        max_size: u8,
         file_kind: FileKind,
         allowed_formats: Vec<AllowedImageFormat>,
         extra: Option<&HashMap<String, String>>,
@@ -168,10 +171,7 @@ impl Chevereto {
 
         let manager = BaseManager::new(
             name,
-            base_url,
             max_size,
-            "source",
-            file_kind,
             allowed_formats,
             #[cfg(feature = "compress")]
             compressed_format,
@@ -179,6 +179,9 @@ impl Chevereto {
 
         Self {
             manager,
+            base_url: base_url.into(),
+            file_part_name: "source".to_string(),
+            file_kind,
             username: username.into(),
             password: password.into(),
             token: token.cloned(),
@@ -188,7 +191,7 @@ impl Chevereto {
     }
 
     fn url(&self, path: &str) -> String {
-        self.manager.base_url.to_owned() + path
+        self.base_url.to_owned() + path
     }
 
     async fn get_auth_data(&self, no_cookie: bool) -> Result<Option<(String, HeaderMap)>> {
@@ -575,7 +578,16 @@ impl Chevereto {
 
         let response = self
             .manager
-            .upload(window.clone(), id, &url, headers, image_path, Some(form))
+            .upload(
+                window.clone(),
+                id,
+                &url,
+                headers,
+                image_path,
+                &self.file_kind,
+                &self.file_part_name,
+                Some(form),
+            )
             .await?;
 
         let status = response.status();

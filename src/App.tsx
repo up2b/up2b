@@ -86,7 +86,12 @@ const Home = () => {
     <>
       <div
         data-tauri-drag-region
-        style={{ height: 28, position: 'fixed', width: '100%', zIndex: 99 }}
+        style={{
+          height: 28,
+          position: 'fixed',
+          width: '100%',
+          zIndex: 9999999,
+        }}
       >
         {TitleBar && suspense(<TitleBar title={keys[activeKey]} />)}
       </div>
