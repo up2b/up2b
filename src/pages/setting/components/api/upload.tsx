@@ -160,7 +160,7 @@ const Upload = ({ rules, pathRules, disabled }: UploadProps) => {
           <Input disabled={disabled} />
         </Form.Item>
 
-        <Form.Item name={name('controller', 'thumb_key')} label="图片缓存键">
+        <Form.Item name={name('controller', 'thumb_key')} label="缩略图键">
           <Input disabled={disabled} />
         </Form.Item>
       </Space>
