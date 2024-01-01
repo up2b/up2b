@@ -21,10 +21,6 @@ export const deleteImage = async (deleteId: string) => {
   return await invoke<DeleteResponse>('delete_image', { deleteId })
 }
 
-export const getImageBeds = async () => {
-  return await invoke<ManagerItem[]>('get_image_beds')
-}
-
 export const getCompressState = async () => {
   return await invoke<boolean>('compress_state')
 }
@@ -49,4 +45,19 @@ export const getUsingImageBed = async () => {
 
 export const getAllowedFormats = async () => {
   return await invoke<AllowedImageFormat[]>('allowed_formats')
+}
+
+export const getSmmsConfig = async () => {
+  return await invoke<ApiConfig>('smms_config')
+}
+
+export const getImageBeds = async () => {
+  return await invoke<ManagerItem[]>('get_managers')
+}
+
+export const newCustomManager = async (
+  managerCode: string,
+  authConfig: ApiAuthConfig,
+) => {
+  return await invoke('new_custom_manager', { managerCode, authConfig })
 }

@@ -2,20 +2,15 @@ use std::{sync::Mutex, time::Duration};
 
 use futures_util::TryStreamExt;
 use read_progress_stream::ReadProgressStream;
-use reqwest::{header::HeaderMap, multipart::Part, Response};
-use serde::Serialize;
+use reqwest::{header::HeaderMap, multipart::Part, Client, Response};
+use serde::{Deserialize, Serialize};
 use tauri::Window;
 use tokio::{fs::File, io::AsyncReadExt};
 use tokio_util::codec::{BytesCodec, FramedRead};
 
 use crate::Result;
 
-#[derive(Clone, Serialize)]
-struct ProgressPayload {
-    id: u32,
-    progress: u64,
-    total: u64,
-}
+use super::ProgressPayload;
 
 pub async fn file_to_body(id: u32, window: Window, file: File) -> Result<reqwest::Body> {
     let file_size = file.metadata().await?.len();
@@ -37,7 +32,8 @@ pub async fn file_to_body(id: u32, window: Window, file: File) -> Result<reqwest
     )))
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "UPPERCASE")]
 pub enum FileKind {
     Stream,
     Buffer,
@@ -55,6 +51,7 @@ impl<'r> UploadFile<'r> {
 }
 
 pub async fn upload<S: Into<Option<u64>>>(
+    client: &Client,
     window: Option<&Window>,
     url: &str,
     headers: HeaderMap,
@@ -66,8 +63,6 @@ pub async fn upload<S: Into<Option<u64>>>(
     texts: Option<&[(&str, &str)]>,
     seconds: S,
 ) -> Result<Response> {
-    let client = reqwest::Client::new();
-
     let mut file_part = match &window {
         None => Part::stream(upload_file.file),
         Some(w) => match upload_file.kind {

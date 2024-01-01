@@ -8,6 +8,7 @@ import {
   Switch,
   Button,
   message,
+  Tooltip,
 } from 'antd'
 import { getVersion } from '@tauri-apps/api/app'
 import {
@@ -21,6 +22,9 @@ import {
 import ProxySetting from './proxy'
 import './index.scss'
 import { open } from '@tauri-apps/api/shell'
+import { PlusOutlined } from '@ant-design/icons'
+import AddCustom from './components/add.tsx'
+import ApiSettingForm from './components/api/form.tsx'
 
 const { Option } = Select
 
@@ -44,12 +48,15 @@ const Setting = ({ config, setConfig }: SettingProps) => {
 
   const [index, setIndex] = useState<string | undefined>(undefined)
 
+  const [showAddCustom, setShowAddCustom] = useState(false)
+
   useEffect(() => {
-    !config &&
+    if (!config) {
       getConfig().then((c) => {
         setConfig(c)
         setDefaultConfig(c)
       })
+    }
 
     getImageBeds().then((r) => {
       setImageBeds(r)
@@ -95,7 +102,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
   const onUpdateConfig = async () => {
     if (!config) return
 
-    // 删除非 USING 图床 keys 数量等于 1 的配置
+    // 删除非 USING 图床 keys 数量等于 1 的配置(只一个 type)
     for (const k in config.auth_config) {
       if (
         k !== config.using &&
@@ -140,24 +147,32 @@ const Setting = ({ config, setConfig }: SettingProps) => {
       case 'API':
         const apiKey = config!.using as InferKeyType<typeof imageBedKind>
         return (
-          <Form.Item label="TOKEN">
-            <Input.Password
-              placeholder="输入 token"
-              value={config?.auth_config?.[apiKey]?.token || ''}
-              onChange={(e) => {
-                setConfig((pre) => ({
-                  ...pre!,
-                  auth_config: {
-                    ...config?.auth_config,
-                    [apiKey]: {
-                      type: 'API',
-                      token: e.target.value,
-                    },
-                  },
-                }))
-              }}
-            />
-          </Form.Item>
+          <ApiSettingForm
+            code={apiKey}
+            authConfig={config?.auth_config?.[apiKey]}
+            disableCancelButton={areObjectsEqual(defaultConfig, config)}
+            disableOkButton={
+              !(config?.auth_config?.[config.using] as ApiAuthConfig)?.token
+            }
+            onOk={async (apiAuthConfig) => {
+              const newConfig = {
+                ...config!,
+                auth_config: {
+                  ...config!.auth_config,
+                  [apiKey]: apiAuthConfig,
+                },
+              }
+              console.log(newConfig)
+              try {
+                await updateConfig(newConfig)
+                setConfig(newConfig)
+                setDefaultConfig(newConfig)
+                messageApi.success('已保存配置')
+              } catch (e) {
+                messageApi.error(String(e))
+              }
+            }}
+          />
         )
       case 'CHEVERETO':
         const commonKey = config!.using as InferKeyType<typeof imageBedKind>
@@ -213,8 +228,6 @@ const Setting = ({ config, setConfig }: SettingProps) => {
     }
   }
 
-  console.log(config)
-
   return (
     <div id="setting">
       {contextHolder}
@@ -232,7 +245,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
       {import.meta.env.MODE === 'production' ? null : <ProxySetting />}
 
       {compressEnbled ? (
-        <Form style={{ padding: '0 24px' }}>
+        <div style={{ padding: '0 24px' }}>
           <Form.Item
             label="自动压缩"
             tooltip="开启此功能后在上传图片时会自动将体积超出限制的图片自动压缩后上传图床"
@@ -247,14 +260,14 @@ const Setting = ({ config, setConfig }: SettingProps) => {
               />
             </Space>
           </Form.Item>
-        </Form>
+        </div>
       ) : null}
 
       {imageBeds.length ? (
-        <Form style={{ padding: '0 24px' }}>
+        <div style={{ padding: '0 24px' }}>
           <Divider>图床</Divider>
 
-          <Form.Item label="选择图床" style={{ maxWidth: 180 }}>
+          <Form.Item label="选择图床">
             <Space>
               <Select
                 placeholder="选择要使用的图床"
@@ -276,6 +289,19 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                       },
                   )
                 }
+                dropdownRender={(menu) => (
+                  <>
+                    {menu}
+                    <Tooltip placement="right" title="添加自定义 api 图床">
+                      <Button
+                        block
+                        type="text"
+                        icon={<PlusOutlined />}
+                        onClick={() => setShowAddCustom((pre) => !pre)}
+                      ></Button>
+                    </Tooltip>
+                  </>
+                )}
               >
                 {imageBeds.map((item) => (
                   <Option key={item.key} value={item.key}>
@@ -290,50 +316,62 @@ const Setting = ({ config, setConfig }: SettingProps) => {
 
           {config?.using ? configKind() : null}
 
-          <Divider />
+          {filterImageBed()?.type === 'API' ? null : (
+            <>
+              <Divider />
 
-          <Form.Item
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Space>
-              <Button
-                onClick={() => location.reload()}
-                disabled={areObjectsEqual(defaultConfig, config)}
+              <Form.Item
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                取消
-              </Button>
-              <Button
-                type="primary"
-                loading={verifying}
-                onClick={onUpdateConfig}
-                disabled={
-                  (filterImageBed()?.type === 'API'
-                    ? !(config?.auth_config?.[config.using] as ApiAuthConfig)
-                      ?.token
-                    : !(
-                      config?.auth_config?.[
-                      config.using
-                      ] as CheveretoAuthConfig
-                    )?.username ||
-                    !(
-                      config?.auth_config?.[
-                      config.using
-                      ] as CheveretoAuthConfig
-                    )?.password) || areObjectsEqual(defaultConfig, config)
-                }
-              >
-                {verifying ? '验证中...' : '保存'}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+                <Space>
+                  <Button
+                    onClick={() => location.reload()}
+                    disabled={areObjectsEqual(defaultConfig, config)}
+                  >
+                    取消
+                  </Button>
+                  <Button
+                    type="primary"
+                    loading={verifying}
+                    onClick={onUpdateConfig}
+                    disabled={
+                      (filterImageBed()?.type === 'API'
+                        ? !(
+                          config?.auth_config?.[config.using] as ApiAuthConfig
+                        )?.token
+                        : !(
+                          config?.auth_config?.[
+                          config.using
+                          ] as CheveretoAuthConfig
+                        )?.username ||
+                        !(
+                          config?.auth_config?.[
+                          config.using
+                          ] as CheveretoAuthConfig
+                        )?.password) || areObjectsEqual(defaultConfig, config)
+                    }
+                  >
+                    {verifying ? '验证中...' : '保存'}
+                  </Button>
+                </Space>
+              </Form.Item>
+            </>
+          )}
+        </div>
       ) : null}
 
-      <div id="version">v{version}</div>
+      <AddCustom
+        show={showAddCustom}
+        onOk={() => {
+          // TODO: 切换到自定义图床
+          setShowAddCustom(false)
+        }}
+        onCancel={() => setShowAddCustom(false)}
+      />
     </div>
   )
 }

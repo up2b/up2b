@@ -54,6 +54,9 @@ image = { version = "0.24", features = [
 ], optional = true }
 regex = "1"
 async-recursion = "1"
+base64 = "0.21"
+futures = "0.3"
+bytes = "1.5"
 
 [dev-dependencies]
 env_logger = "0.10"

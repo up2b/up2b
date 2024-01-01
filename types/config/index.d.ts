@@ -1,12 +1,3 @@
-/*
- * Author:      thepoy
- * Email:       thepoy@163.com
- * File Name:   config.d.ts
- * Created At:  2023-12-15 18:00:11
- * Modified At: 2023-12-15 18:02:45
- * Modified By: thepoy
- */
-
 type ManagerKind = 'API' | 'CHEVERETO'
 
 type ManagerCode = 'SMMS' | 'IMGSE' | 'IMGTG'
@@ -24,11 +15,6 @@ type CheveretoManagerKey = _CheveretoKey<ManagerCode>
 type InferKeyType<
   T extends ApiAuthConfig['type'] | CheveretoAuthConfig['type'],
 > = T extends 'API' ? APIManagerKey : CheveretoManagerKey
-
-interface ApiAuthConfig {
-  type: 'API'
-  token: string
-}
 
 type Extra = Record<string, string>
 
@@ -92,5 +78,5 @@ interface ManagerItem {
   type: ManagerKind
   name: string
   key: string
-  index: string
+  index?: string
 }

@@ -57,8 +57,14 @@ pub enum Error {
     #[error("{0}")]
     Chevereto(#[from] CheveretoError), // 使用 Chevereto 写的图床，有 imgse、imgtg
 
+    #[error(transparent)]
+    Header(#[from] HeaderError),
+
     #[error("connection closed before message completed. Should retry.")]
     ConnectionClosedBeforeMessageCompleted,
+
+    #[error("{} 已存在", .0.name())]
+    CustomUnique(ManagerCode),
 }
 
 impl Error {
@@ -99,4 +105,10 @@ pub enum ProxyError {
 pub enum AuthConfigError {
     #[error("{0} 配置为空")]
     Null(ManagerCode),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum HeaderError {
+    #[error(transparent)]
+    InvalidName(reqwest::header::InvalidHeaderName),
 }
