@@ -26,7 +26,7 @@ const ApiSettingForm = ({ code, onSubmit, onCancel }: ApiSettingFormProps) => {
           const apiAuthConfig = { type: 'API', ...values }
           onSubmit(apiAuthConfig)
         }}
-        onFinishFailed={(e) => messageApi.error('一些配置项有错误，请检查')}
+        onFinishFailed={() => messageApi.error('一些配置项有错误，请检查')}
       >
         <ApiSetting code={code} />
 

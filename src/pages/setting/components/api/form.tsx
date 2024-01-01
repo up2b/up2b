@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { Form, Button, Space } from 'antd'
-import { areObjectsEqual } from '~/lib'
 import { getSmmsConfig } from '~/lib/api'
 import ApiSetting, {
   initApiConfigFormValues,
@@ -64,9 +63,9 @@ const ApiSettingForm = ({
     <Form
       form={form}
       initialValues={formData}
-      onValuesChange={(changedValues, allValues) => {
-        // console.log(areObjectsEqual(formData, { type: 'API', ...allValues }))
-      }}
+      // onValuesChange={(changedValues, allValues) => {
+      // console.log(areObjectsEqual(formData, { type: 'API', ...allValues }))
+      // }}
       onFinish={(values) => {
         const c = formDataToApiConfig(values.api)
 
