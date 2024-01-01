@@ -115,7 +115,7 @@ pub fn use_manager(
                 let manager = SmMs::new(token.to_string());
                 Box::new(manager)
             }
-            _ => return Err(Error::Config(ConfigError::Type("sm.ms".to_string()))),
+            _ => return Err(Error::Config(ConfigError::Type(using.name()))),
         },
         ManagerCode::Imgse => match auth_config {
             ManagerAuthConfigKind::Chevereto {
@@ -126,7 +126,7 @@ pub fn use_manager(
                 let imgse = Imgse::new(username, password, extra.as_ref());
                 Box::new(imgse)
             }
-            _ => return Err(Error::Config(ConfigError::Type("imgse.com".to_string()))),
+            _ => return Err(Error::Config(ConfigError::Type(using.name()))),
         },
         ManagerCode::Imgtg => match auth_config {
             ManagerAuthConfigKind::Chevereto {
@@ -137,7 +137,7 @@ pub fn use_manager(
                 let imgtg = Imgtg::new(username, password, extra.as_ref());
                 Box::new(imgtg)
             }
-            _ => return Err(Error::Config(ConfigError::Type("imgtg.com".to_string()))),
+            _ => return Err(Error::Config(ConfigError::Type(using.name()))),
         },
         ManagerCode::Custom(s) => match auth_config {
             ManagerAuthConfigKind::API { token, api } => {

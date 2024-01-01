@@ -54,7 +54,7 @@ pub enum Error {
     #[error("{0}")]
     Other(String),
 
-    #[error("{0}")]
+    #[error(transparent)]
     Chevereto(#[from] CheveretoError), // 使用 Chevereto 写的图床，有 imgse、imgtg
 
     #[error(transparent)]
