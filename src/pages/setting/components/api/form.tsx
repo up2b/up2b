@@ -71,10 +71,10 @@ const ApiSettingForm = ({
           areObjectsEqual(formData, { type: 'API', ...allValues }),
         )
       }}
-      onFinish={(values) => {
+      onFinish={async (values) => {
         const c = formDataToApiConfig(values.api)
 
-        onOk?.({ ...values, type: 'API', api: c })
+        await onOk?.({ ...values, type: 'API', api: c })
 
         setInnerDisableOkButton(true)
       }}

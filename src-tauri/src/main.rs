@@ -178,6 +178,16 @@ async fn automatic_compression() -> bool {
 }
 
 #[tauri::command]
+async fn check_new_manager_code(manager_code: ManagerCode) -> bool {
+    let conf = CONFIG.read().await;
+
+    match conf.as_ref() {
+        None => true,
+        Some(c) => !c.auth_config().contains_key(&manager_code),
+    }
+}
+
+#[tauri::command]
 async fn new_custom_manager(
     manager_code: ManagerCode,
     auth_config: ManagerAuthConfigKind,
@@ -257,6 +267,7 @@ async fn main() {
             automatic_compression,
             smms_config,
             get_managers,
+            check_new_manager_code,
             new_custom_manager,
         ])
         .run(tauri::generate_context!())

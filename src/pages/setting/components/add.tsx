@@ -2,7 +2,67 @@ import React, { useEffect, useState } from 'react'
 import { Button, Form, Input, Modal, Space, message } from 'antd'
 import ApiSetting, { initApiConfigFormValues } from './api'
 import { CheckOutlined } from '@ant-design/icons'
-import { newCustomManager } from '~/lib'
+import { checkNewManagerCode, newCustomManager } from '~/lib'
+import type { MessageInstance } from 'antd/es/message/interface'
+
+interface ManagerCodeState {
+  checked: boolean
+  code: string
+}
+
+interface NewApiCodeFormProps {
+  code: ManagerCodeState
+  setCode: React.Dispatch<React.SetStateAction<ManagerCodeState>>
+}
+
+const NewApiCodeForm = ({ code, setCode }: NewApiCodeFormProps) => {
+  const [form] = Form.useForm()
+
+  return (
+    <Form
+      form={form}
+      onFinish={(values) => {
+        setCode({ ...values, checked: true })
+      }}
+    >
+      <Space.Compact>
+        <Form.Item
+          name="code"
+          label="图床代码"
+          tooltip="仅支持字母、数字、下划线。通常为图床名称，如smms、imgtg"
+          hasFeedback
+          normalize={(v: string) => {
+            return v.toUpperCase()
+          }}
+          rules={[
+            { required: true },
+            {
+              type: 'string',
+              pattern: CODE_REGEX,
+              warningOnly: true,
+              message: '仅支持字母、数字、下划线',
+            },
+            {
+              validator: async (_, value) => {
+                if (!(await checkNewManagerCode('CUSTOM-' + value))) {
+                  throw new Error('图床代码已存在')
+                } else {
+                  return
+                }
+              },
+            },
+          ]}
+        >
+          <Input placeholder="图床代码" value={code.code} allowClear />
+        </Form.Item>
+
+        <Form.Item>
+          <Button htmlType="submit" type="primary" icon={<CheckOutlined />} />
+        </Form.Item>
+      </Space.Compact>
+    </Form>
+  )
+}
 
 interface ApiSettingFormProps {
   code: string
@@ -73,29 +133,21 @@ const ApiSettingForm = ({ code, onSubmit, onCancel }: ApiSettingFormProps) => {
 
 interface AddCustomProps {
   show?: boolean
-  onOk: () => void
+  onOk: (code: string, apiAuthConfig: ApiAuthConfig) => Promise<void>
   onCancel: () => void
 }
 
 const CODE_REGEX = /^\w+$/
 
 const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
-  const [code, setCode] = useState<{
-    checked: boolean
-    code: string
-  }>({ checked: false, code: '' })
+  const [code, setCode] = useState<ManagerCodeState>({
+    checked: false,
+    code: '',
+  })
 
   useEffect(() => {
     setCode({ checked: false, code: '' })
   }, [show])
-
-  // const disableOkButton =
-  //   !authConfig ||
-  //   authConfig?.token.length === 0 ||
-  //   (authConfig.api.auth_method.type === 'BODY' &&
-  //     (!authConfig.api.auth_method.key ||
-  //       authConfig.api.auth_method.key.length === 0)) ||
-  //   authConfig.api.list.url.length === 0
 
   return (
     <div>
@@ -124,47 +176,11 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
               console.log(data)
               newCustomManager('CUSTOM-' + code.code, data)
 
-              onOk()
+              onOk(code.code, data)
             }}
           />
         ) : (
-          <Form>
-            <Form.Item
-              name="code"
-              label="图床代码"
-              tooltip="仅支持字母、数字、下划线。通常为图床名称，如smms、imgtg"
-              hasFeedback
-              rules={[
-                { required: true },
-                {
-                  type: 'string',
-                  pattern: CODE_REGEX,
-                  warningOnly: true,
-                  message: '仅支持字母、数字、下划线',
-                },
-              ]}
-            >
-              <Space.Compact>
-                <Input
-                  placeholder="图床代码"
-                  value={code.code}
-                  onChange={(e) =>
-                    setCode((pre) => ({
-                      ...pre,
-                      code: e.target.value.toUpperCase(),
-                    }))
-                  }
-                />
-                <Button
-                  htmlType="submit"
-                  type="primary"
-                  icon={<CheckOutlined />}
-                  onClick={() => setCode((pre) => ({ ...pre, checked: true }))}
-                  disabled={!CODE_REGEX.test(code.code)}
-                />
-              </Space.Compact>
-            </Form.Item>
-          </Form>
+          <NewApiCodeForm code={code} setCode={setCode} />
         )}
       </Modal>
     </div>
