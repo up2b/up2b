@@ -1,6 +1,7 @@
 import React from 'react'
 import { Form, Input, Radio, Space, InputNumber, Select } from 'antd'
 import type { FormRule } from 'antd'
+import Status from '../status'
 
 const ALLOWED_FORMATS = ['PNG', 'JPEG', 'GIF', 'WEBP', 'BMP']
 
@@ -145,8 +146,26 @@ const Upload = ({ rules, pathRules, disabled }: UploadProps) => {
 
       <Space wrap>
         <Form.Item
+          label="成功状态键"
+          name={name('controller', 'status', 'key')}
+          rules={rules}
+        >
+          <Input disabled={disabled} />
+        </Form.Item>
+
+        <Form.Item
+          label="成功状态值"
+          name={name('controller', 'status', 'value')}
+          rules={rules}
+        >
+          <Status disabled={disabled} />
+        </Form.Item>
+      </Space>
+
+      <Space wrap>
+        <Form.Item
           label="图片键"
-          name={name('controller', 'image_url_key')}
+          name={name('controller', 'success', 'image_url_key')}
           rules={rules}
         >
           <Input disabled={disabled} />
@@ -154,16 +173,34 @@ const Upload = ({ rules, pathRules, disabled }: UploadProps) => {
 
         <Form.Item
           label="删除 id 键"
-          name={name('controller', 'deleted_id_key')}
+          name={name('controller', 'success', 'deleted_id_key')}
           rules={rules}
         >
           <Input disabled={disabled} />
         </Form.Item>
 
-        <Form.Item name={name('controller', 'thumb_key')} label="缩略图键">
+        <Form.Item
+          name={name('controller', 'success', 'thumb_key')}
+          label="缩略图键"
+        >
           <Input disabled={disabled} />
         </Form.Item>
       </Space>
+
+      <Form.Item
+        name={name('controller', 'error', 'key')}
+        label="错误 key"
+        rules={rules}
+      >
+        <Input disabled={disabled} />
+      </Form.Item>
+
+      <Form.Item
+        name={name('controller', 'error', 'repeated_regex')}
+        label="重复上传正则表达式"
+      >
+        <Input disabled={disabled} />
+      </Form.Item>
     </>
   )
 }

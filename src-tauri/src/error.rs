@@ -65,12 +65,25 @@ pub enum Error {
 
     #[error("{} 已存在", .0.name())]
     CustomUnique(ManagerCode),
+
+    #[error(transparent)]
+    Regex(#[from] regex::Error),
+
+    #[error(transparent)]
+    Upload(#[from] UploadError),
+
+    #[error("响应体中未找到 key：{0}")]
+    KeyNotFound(String),
 }
 
 impl Error {
     pub fn as_string(&self) -> String {
         match self {
             Self::OverSize(_, _, _, _) => "OVER_SIZE".to_owned(),
+            Self::Upload(e) => match e {
+                UploadError::Repeat(_) => "REPEATED".to_owned(),
+                _ => "UNKOWN".to_owned(),
+            },
             _ => "UNKOWN".to_owned(),
         }
     }
@@ -111,4 +124,12 @@ pub enum AuthConfigError {
 pub enum HeaderError {
     #[error(transparent)]
     InvalidName(reqwest::header::InvalidHeaderName),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum UploadError {
+    #[error("{0}")]
+    Error(String),
+    #[error("{0}")]
+    Repeat(String),
 }
