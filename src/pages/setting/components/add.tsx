@@ -3,7 +3,6 @@ import { Button, Form, Input, Modal, Space, message } from 'antd'
 import ApiSetting, { initApiConfigFormValues } from './api'
 import { CheckOutlined } from '@ant-design/icons'
 import { checkNewManagerCode, newCustomManager } from '~/lib'
-import type { MessageInstance } from 'antd/es/message/interface'
 
 interface ManagerCodeState {
   checked: boolean
@@ -172,8 +171,6 @@ const AddCustom = ({ show, onOk, onCancel }: AddCustomProps) => {
             code={code.code}
             onCancel={onCancel}
             onSubmit={(data) => {
-              console.log(initApiConfigFormValues)
-              console.log(data)
               newCustomManager('CUSTOM-' + code.code, data)
 
               onOk(code.code, data)
