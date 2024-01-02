@@ -55,6 +55,10 @@ export const getImageBeds = async () => {
   return await invoke<ManagerItem[]>('get_managers')
 }
 
+export const checkNewManagerCode = async (managerCode: string) => {
+  return await invoke<boolean>('check_new_manager_code', { managerCode })
+}
+
 export const newCustomManager = async (
   managerCode: string,
   authConfig: ApiAuthConfig,
