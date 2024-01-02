@@ -151,9 +151,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
             code={apiKey}
             authConfig={config?.auth_config?.[apiKey]}
             disableCancelButton={areObjectsEqual(defaultConfig, config)}
-            disableOkButton={
-              !(config?.auth_config?.[config.using] as ApiAuthConfig)?.token
-            }
+            disableOkButton={defaultConfig?.using === apiKey}
             onOk={async (apiAuthConfig) => {
               const newConfig = {
                 ...config!,
@@ -162,7 +160,6 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                   [apiKey]: apiAuthConfig,
                 },
               }
-              console.log(newConfig)
               try {
                 await updateConfig(newConfig)
                 setConfig(newConfig)
@@ -339,20 +336,17 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                     loading={verifying}
                     onClick={onUpdateConfig}
                     disabled={
-                      (filterImageBed()?.type === 'API'
-                        ? !(
-                          config?.auth_config?.[config.using] as ApiAuthConfig
-                        )?.token
-                        : !(
-                          config?.auth_config?.[
-                          config.using
-                          ] as CheveretoAuthConfig
-                        )?.username ||
-                        !(
-                          config?.auth_config?.[
-                          config.using
-                          ] as CheveretoAuthConfig
-                        )?.password) || areObjectsEqual(defaultConfig, config)
+                      !(
+                        config?.auth_config?.[
+                        config.using
+                        ] as CheveretoAuthConfig
+                      )?.username ||
+                      !(
+                        config?.auth_config?.[
+                        config.using
+                        ] as CheveretoAuthConfig
+                      )?.password ||
+                      areObjectsEqual(defaultConfig, config)
                     }
                   >
                     {verifying ? '验证中...' : '保存'}

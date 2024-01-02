@@ -1,4 +1,7 @@
-use std::{sync::Mutex, time::Duration};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use futures_util::TryStreamExt;
 use read_progress_stream::ReadProgressStream;
@@ -12,11 +15,14 @@ use crate::Result;
 
 use super::ProgressPayload;
 
-pub async fn file_to_body(id: u32, window: Window, file: File) -> Result<reqwest::Body> {
+pub async fn file_to_body(
+    id: u32,
+    window: Arc<Mutex<Window>>,
+    file: File,
+) -> Result<reqwest::Body> {
     let file_size = file.metadata().await?.len();
-    let window = Mutex::new(window);
-
     let stream = FramedRead::new(file, BytesCodec::new()).map_ok(|r| r.freeze());
+
     Ok(reqwest::Body::wrap_stream(ReadProgressStream::new(
         stream,
         Box::new(move |_, progress| {
@@ -58,29 +64,32 @@ pub async fn upload<S: Into<Option<u64>>>(
     id: u32,
     part_name: &str,
     filename: &str,
-    upload_file: UploadFile<'_>,
+    mut upload_file: UploadFile<'_>,
     mime_type: &str,
     texts: Option<&[(&str, &str)]>,
     seconds: S,
 ) -> Result<Response> {
-    let mut file_part = match &window {
+    let file_part = match &window {
         None => Part::stream(upload_file.file),
         Some(w) => match upload_file.kind {
             FileKind::Buffer => {
-                let mut f = upload_file.file;
-                let mut buf = vec![];
-                f.read_to_end(&mut buf).await?;
+                let mut buf = Vec::new();
+                upload_file.file.read_to_end(&mut buf).await?;
                 Part::stream(buf)
             }
             FileKind::Stream => {
-                let body = file_to_body(id, w.to_owned().clone(), upload_file.file).await?;
+                let body = file_to_body(
+                    id,
+                    Arc::new(Mutex::new(w.to_owned().clone())),
+                    upload_file.file,
+                )
+                .await?;
                 Part::stream(body)
             }
         },
-    };
-    file_part = file_part
-        .file_name(filename.to_owned())
-        .mime_str(mime_type)?;
+    }
+    .file_name(filename.to_owned())
+    .mime_str(mime_type)?;
 
     let mut form = reqwest::multipart::Form::new().part(part_name.to_owned(), file_part);
 
@@ -90,11 +99,13 @@ pub async fn upload<S: Into<Option<u64>>>(
         }
     }
 
+    let timeout_duration = Duration::from_secs(seconds.into().unwrap_or(5));
+
     let resp = client
         .post(url)
         .headers(headers.clone())
         .multipart(form)
-        .timeout(Duration::from_secs(seconds.into().unwrap_or(5)))
+        .timeout(timeout_duration)
         .send()
         .await?;
 

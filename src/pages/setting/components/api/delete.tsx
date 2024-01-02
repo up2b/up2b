@@ -1,55 +1,7 @@
-import React, { InputNumber } from 'antd'
-import { Form, Input, Radio, Space, Switch, Select } from 'antd'
+import React from 'react'
+import { Form, Input, Radio, Space } from 'antd'
 import type { FormRule } from 'antd'
-import { useState } from 'react'
-
-interface SuccessFieldProps {
-  value?: string | number | boolean
-  disabled: boolean
-  onChange?: (value: string | number | boolean) => void
-}
-
-const SuccessField = ({ value, disabled, onChange }: SuccessFieldProps) => {
-  const [selected, setSelected] = useState<'string' | 'number' | 'boolean'>(
-    typeof value as 'string' | 'number' | 'boolean',
-  )
-
-  const render = () => {
-    switch (selected) {
-      case 'string':
-        return (
-          <Input
-            disabled={disabled}
-            onChange={(e) => onChange?.(e.target.value)}
-          />
-        )
-      case 'number':
-        return (
-          <InputNumber disabled={disabled} onChange={(v) => onChange?.(v!)} />
-        )
-      case 'boolean':
-        return (
-          <Switch
-            disabled={disabled}
-            checked={value as boolean | undefined}
-            onChange={onChange}
-          />
-        )
-    }
-  }
-
-  return (
-    <Space>
-      <Select value={selected} disabled={disabled} onChange={setSelected}>
-        <Select.Option value="boolean">布尔</Select.Option>
-        <Select.Option value="number">数字</Select.Option>
-        <Select.Option value="string">字符串</Select.Option>
-      </Select>
-
-      {render()}
-    </Space>
-  )
-}
+import Status from '../status'
 
 interface DeleteProps {
   rules: FormRule[]
@@ -136,7 +88,7 @@ const Delete = ({ rules, pathRules, disabled }: DeleteProps) => {
               name={name('controller', 'should_be')}
               rules={rules}
             >
-              <SuccessField disabled={disabled} />
+              <Status disabled={disabled} />
             </Form.Item>
 
             <Form.Item
