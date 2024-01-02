@@ -77,6 +77,12 @@ SUBCOMMANDS:
 
 ### 1 Windows 平台中无法使用 CLI
 
-因为 Windows 中的程序被标记为 GUI，在启动时系统不会为 GUI 程序打开控制台，需要单独适配 Windows 的控制台。
+因为 Windows 中的程序被标记为 GUI，在启动时系统不会为 GUI 程序打开控制台，需要单独适配 Windows 的控制台[#8305](https://github.com/tauri-apps/tauri/issues/8305)。
 
-https://github.com/tauri-apps/tauri/issues/8305
+## 反馈交流
+
+可以通过下面的方式进行反馈交流，遇到错误或提供建议时首先第一种，需要使用帮助时建议使用第二种方式。
+
+- [issues](https://github.com/thep0y/up2b-rs/issues)
+
+- [电报群](https://t.me/up2b_rs)
