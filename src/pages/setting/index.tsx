@@ -112,29 +112,57 @@ const Setting = ({ config, setConfig }: SettingProps) => {
       }
     }
 
-    if (config.auth_config[config.using]?.type === 'CHEVERETO') {
-      let extra: Extra | null = null
+    let extra: Extra | null = null
 
-      setVerifying(true)
-      try {
-        extra = await verify(config.using, config.auth_config[config.using]!)
-        messageApi.success('配置验证通过')
-      } catch (e) {
-        messageApi.error(String(e))
+    setVerifying(true)
+    try {
+      extra = await verify(config.using, config.auth_config[config.using]!)
+      messageApi.success('配置验证通过')
+    } catch (e) {
+      messageApi.error(String(e))
 
-        return
-      } finally {
-        setVerifying(false)
-      }
-
-      if (extra)
-        (config.auth_config[config.using] as CheveretoAuthConfig).extra = extra
+      return
+    } finally {
+      setVerifying(false)
     }
+
+    if (extra)
+      (config.auth_config[config.using] as CheveretoAuthConfig).extra = extra
 
     try {
       await updateConfig(config)
       setDefaultConfig(config)
       messageApi.success('已保存配置')
+    } catch (e) {
+      messageApi.error(String(e))
+    }
+  }
+
+  const updateApiConfig = async (
+    code: ManagerCode,
+    apiAuthConfig: ApiAuthConfig,
+    isNew: boolean = false,
+  ) => {
+    const newConfig: Config = {
+      ...config!,
+      using: code,
+      auth_config: {
+        ...config!.auth_config,
+        [code]: apiAuthConfig,
+      },
+    }
+    try {
+      // 更新配置
+      isNew || (await updateConfig(newConfig))
+
+      setConfig(newConfig)
+      setDefaultConfig(newConfig)
+
+      // 新加图床添加到 imageBeds 中
+      isNew &&
+        setImageBeds((pre) => [...pre, { key: code, type: 'API', name: code }])
+
+      messageApi.success(isNew ? '已添加 ' + code : '已更新配置')
     } catch (e) {
       messageApi.error(String(e))
     }
@@ -153,21 +181,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
             disableCancelButton={areObjectsEqual(defaultConfig, config)}
             disableOkButton={defaultConfig?.using === apiKey}
             onOk={async (apiAuthConfig) => {
-              const newConfig = {
-                ...config!,
-                auth_config: {
-                  ...config!.auth_config,
-                  [apiKey]: apiAuthConfig,
-                },
-              }
-              try {
-                await updateConfig(newConfig)
-                setConfig(newConfig)
-                setDefaultConfig(newConfig)
-                messageApi.success('已保存配置')
-              } catch (e) {
-                messageApi.error(String(e))
-              }
+              await updateApiConfig(apiKey, apiAuthConfig)
             }}
           />
         )
@@ -360,8 +374,8 @@ const Setting = ({ config, setConfig }: SettingProps) => {
 
       <AddCustom
         show={showAddCustom}
-        onOk={() => {
-          // TODO: 切换到自定义图床
+        onOk={async (code, apiAuthConfig) => {
+          await updateApiConfig(code as ManagerCode, apiAuthConfig, true)
           setShowAddCustom(false)
         }}
         onCancel={() => setShowAddCustom(false)}
