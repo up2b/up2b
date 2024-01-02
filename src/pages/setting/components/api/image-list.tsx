@@ -42,15 +42,15 @@ const ImageList = ({ rules, pathRules, disabled }: ImageListProps) => {
         </Form.Item>
 
         <Form.Item
-          label="图片删除 id 键"
+          label="删除 id 键"
           name={name('controller', 'deleted_id_key')}
           rules={rules}
         >
-          <Input placeholder="输入图片删除 id 键名" disabled={disabled} />
+          <Input placeholder="输入删除 id 键名" disabled={disabled} />
         </Form.Item>
 
-        <Form.Item name={name('controller', 'thumb_key')} label="图片缓存键">
-          <Input placeholder="输入图片缓存键名" disabled={disabled} />
+        <Form.Item name={name('controller', 'thumb_key')} label="缩略图键">
+          <Input placeholder="输入缩略图键名" disabled={disabled} />
         </Form.Item>
       </Space>
     </>

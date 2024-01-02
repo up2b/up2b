@@ -44,8 +44,12 @@ export const initApiConfigFormValues: ApiAuthConfigForm = {
       },
       other_body: undefined,
       controller: {
-        image_url_key: '',
-        deleted_id_key: '',
+        status: { key: 'status', value: true },
+        error: { key: 'error' },
+        success: {
+          image_url_key: '',
+          deleted_id_key: '',
+        },
       },
     },
   },

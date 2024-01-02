@@ -111,10 +111,26 @@ type ApiUploadContentType =
   | ApiUploadJsonContentType
   | ApiUploadMultipartContentType
 
-interface ApiUploadController {
+interface ApiUploadStatusController {
+  key: string
+  value: string | number | boolean
+}
+
+interface ApiUploadErrorController {
+  key: string
+  repeat_regex?: string
+}
+
+interface ApiUploadSuccessController {
   image_url_key: string
   deleted_id_key: string
   thumb_key?: string
+}
+
+interface ApiUploadController {
+  status: ApiUploadStatusController
+  error: ApiUploadErrorController
+  success: ApiUploadSuccessController
 }
 
 interface ApiUploadConfig {

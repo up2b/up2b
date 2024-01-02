@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Form, Button, Space } from 'antd'
+import { areObjectsEqual } from '~/lib'
 import { getSmmsConfig } from '~/lib/api'
 import ApiSetting, {
   initApiConfigFormValues,
@@ -27,6 +28,8 @@ const ApiSettingForm = ({
   const [config, setConfig] = useState<ApiConfigForm | undefined>(
     apiConfigToForm(authConfig?.api),
   )
+
+  const [innerDisableOkButton, setInnerDisableOkButton] = useState(true)
 
   useEffect(() => {
     if (config) {
@@ -63,13 +66,17 @@ const ApiSettingForm = ({
     <Form
       form={form}
       initialValues={formData}
-      // onValuesChange={(changedValues, allValues) => {
-      // console.log(areObjectsEqual(formData, { type: 'API', ...allValues }))
-      // }}
+      onValuesChange={(_, allValues) => {
+        setInnerDisableOkButton(
+          areObjectsEqual(formData, { type: 'API', ...allValues }),
+        )
+      }}
       onFinish={(values) => {
         const c = formDataToApiConfig(values.api)
 
         onOk?.({ ...values, type: 'API', api: c })
+
+        setInnerDisableOkButton(true)
       }}
     >
       <ApiSetting code={code} />
@@ -95,7 +102,7 @@ const ApiSettingForm = ({
             key="submit"
             type="primary"
             htmlType="submit"
-            disabled={disableOkButton}
+            disabled={disableOkButton && innerDisableOkButton}
           >
             保存
           </Button>

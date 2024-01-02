@@ -5,12 +5,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::Window;
 
-use crate::http::multipart::FileKind;
 use crate::Result;
+use crate::{http::multipart::FileKind, manager::api::UploadResponseStatus};
 
 use super::api::{
     Api, AuthMethod, BaseApiManager, Delete, DeleteKeyKind, DeleteMethod, List, ListRequestMethod,
-    ListResponseController, Upload, UploadResponseController,
+    ListResponseController, Upload, UploadResponseController, UploadResponseErrorController,
+    UploadResponseSuccuessController,
 };
 #[cfg(feature = "compress")]
 use super::CompressedFormat;
@@ -21,6 +22,14 @@ use super::{
 
 lazy_static! {
     pub static ref SMMS_API: Api = {
+        let status = UploadResponseStatus::new("success", true);
+        let error = UploadResponseErrorController::new(
+            "message",
+            "^Image upload repeated limit, this image exists at: (.+?)$".to_owned(),
+        );
+        let success = UploadResponseSuccuessController::new("data.url", None, "data.hash");
+        let controller = UploadResponseController::new(status, error, success);
+
         let upload = Upload::new(
             "/upload",
             5,
@@ -38,7 +47,7 @@ lazy_static! {
                 file_kind: FileKind::Stream,
             },
             None,
-            UploadResponseController::new("data.url", None, "data.hash"),
+            controller,
             5,
         );
 
