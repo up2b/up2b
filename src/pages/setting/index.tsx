@@ -26,6 +26,20 @@ import { PlusOutlined } from '@ant-design/icons'
 import AddCustom from './components/add.tsx'
 import ApiSettingForm from './components/api/form.tsx'
 
+/*
+ * 删除非 USING 图床 keys 数量等于 1 的配置(只一个 type)
+ */
+const cleanConfig = (config: Config) => {
+  for (const k in config.auth_config) {
+    if (
+      k !== config.using &&
+      Object.keys(config.auth_config[k as ManagerCode]!).length === 1
+    ) {
+      delete config.auth_config[k as ManagerCode]
+    }
+  }
+}
+
 const { Option } = Select
 
 interface SettingProps {
@@ -102,15 +116,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
   const onUpdateConfig = async () => {
     if (!config) return
 
-    // 删除非 USING 图床 keys 数量等于 1 的配置(只一个 type)
-    for (const k in config.auth_config) {
-      if (
-        k !== config.using &&
-        Object.keys(config.auth_config[k as ManagerCode]!).length === 1
-      ) {
-        delete config.auth_config[k as ManagerCode]
-      }
-    }
+    cleanConfig(config)
 
     let extra: Extra | null = null
 
@@ -152,15 +158,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
       },
     }
 
-    // 删除非 USING 图床 keys 数量等于 1 的配置(只一个 type)
-    for (const k in newConfig.auth_config) {
-      if (
-        k !== newConfig.using &&
-        Object.keys(newConfig.auth_config[k as ManagerCode]!).length === 1
-      ) {
-        delete newConfig.auth_config[k as ManagerCode]
-      }
-    }
+    cleanConfig(newConfig)
 
     try {
       // 更新配置
