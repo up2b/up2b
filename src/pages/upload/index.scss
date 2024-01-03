@@ -4,11 +4,9 @@
   border: var(--ant-line-width) dashed var(--ant-color-border);
   border-radius: 10px;
   flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
   cursor: pointer;
+  overflow-y: auto;
+  padding: 10px;
 
   &:hover {
     border-color: #1677ff;
@@ -72,8 +70,7 @@
   &-error {
     width: 150px;
     height: 180px;
-    border: var(--ant-line-width) var(--ant-line-type)
-      var(--ant-color-error-border);
+    border: var(--ant-line-width) var(--ant-line-type) var(--ant-color-error-border);
     border-radius: 10px;
     background-color: var(--ant-color-error-bg);
     display: flex;
