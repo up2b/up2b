@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::Window;
 
@@ -76,63 +75,6 @@ lazy_static! {
 
         Api::new("https://smms.app/api/v2", auth_method, upload, list, delete)
     };
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct HistoryDataItem {
-    width: u16,
-    height: u16,
-    filename: String,
-    storename: String,
-    size: u64,
-    path: String,
-    hash: String,
-    created_at: String,
-    url: String,
-    delete: String,
-    page: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct HistoryResponse {
-    success: bool,
-    code: String,
-    message: String,
-    data: Vec<HistoryDataItem>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct SmDeleteResponse {
-    success: bool,
-    code: String,
-    message: String,
-    #[serde(rename = "RequestId")]
-    request_id: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct SmUploadData {
-    file_id: u32,
-    width: u32,
-    height: u32,
-    filename: String,
-    storename: String,
-    size: u32,
-    path: String,
-    hash: String,
-    url: String,
-    delete: String,
-    page: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct SmUploadResponse {
-    success: bool,
-    code: String,
-    message: String,
-    #[serde(rename = "RequestId")]
-    request_id: String,
-    data: Option<SmUploadData>,
 }
 
 #[derive(Debug)]
