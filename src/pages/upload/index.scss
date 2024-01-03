@@ -8,6 +8,13 @@
   overflow-y: auto;
   padding: 10px;
 
+  &__empty {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+
   &:hover {
     border-color: #1677ff;
   }

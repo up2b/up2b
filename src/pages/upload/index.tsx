@@ -221,7 +221,7 @@ const Upload = () => {
     <>
       {contextHolder}
 
-      <div className="upload">
+      <div className={'upload' + (images.length === 0 ? ' upload__empty' : '')}>
         {images.length === 0 ? (
           <>
             <CloudUploadOutlined className="upload-icon" />
