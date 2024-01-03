@@ -46,6 +46,8 @@
 
 ## CLI
 
+Windows 平台不支持，原因见下面的“已知问题”。
+
 与 PicGo 类似，UP2B 也提供了一个上传图片的 CLI 命令，下面是帮助信息：
 
 ```
@@ -77,7 +79,9 @@ SUBCOMMANDS:
 
 ### 1 Windows 平台中无法使用 CLI
 
-因为 Windows 中的程序被标记为 GUI，在启动时系统不会为 GUI 程序打开控制台，需要单独适配 Windows 的控制台[#8305](https://github.com/tauri-apps/tauri/issues/8305)。
+因为 Windows 中的程序被标记为 GUI，在启动时系统不会为 GUI 程序打开控制台，[#8305](https://github.com/tauri-apps/tauri/issues/8305)。
+
+这个问题经过测试目前无法解决，正考虑是否专门为解决这个问题推出一个只支持上传图床的`up2b-lite`命令行工具。
 
 ## 反馈交流
 
