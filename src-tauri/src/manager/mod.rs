@@ -126,7 +126,7 @@ pub fn use_manager(
                 let imgse = Imgse::new(username, password, extra.as_ref());
                 Box::new(imgse)
             }
-            _ => return Err(Error::Config(ConfigError::Type(using.name()))),
+            _ => unreachable!(),
         },
         ManagerCode::Imgtg => match auth_config {
             ManagerAuthConfigKind::Chevereto {
@@ -137,7 +137,7 @@ pub fn use_manager(
                 let imgtg = Imgtg::new(username, password, extra.as_ref());
                 Box::new(imgtg)
             }
-            _ => return Err(Error::Config(ConfigError::Type(using.name()))),
+            _ => unreachable!(),
         },
         ManagerCode::Custom(s) => match auth_config {
             ManagerAuthConfigKind::API { token, api } => {
@@ -152,7 +152,7 @@ pub fn use_manager(
 
                 Box::new(custom)
             }
-            _ => return Err(Error::Config(ConfigError::Type(s.to_string()))),
+            _ => unreachable!(),
         },
     };
 
