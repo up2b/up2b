@@ -75,7 +75,7 @@ const Delete = ({ rules, pathRules, disabled }: DeleteProps) => {
         <Form.Item>
           <Space wrap>
             <Form.Item
-              label="成功键"
+              label="成功状态键"
               name={name('controller', 'key')}
               rules={rules}
             >
@@ -83,7 +83,7 @@ const Delete = ({ rules, pathRules, disabled }: DeleteProps) => {
             </Form.Item>
 
             <Form.Item
-              label="成功的值"
+              label="成功状态值"
               tooltip="删除成功时值应该是什么"
               name={name('controller', 'should_be')}
               rules={rules}

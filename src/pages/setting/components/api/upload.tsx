@@ -189,7 +189,7 @@ const Upload = ({ rules, pathRules, disabled }: UploadProps) => {
 
       <Form.Item
         name={name('controller', 'error', 'key')}
-        label="错误 key"
+        label="失败消息键"
         rules={rules}
       >
         <Input disabled={disabled} />

@@ -48,6 +48,15 @@ const Home = () => {
     appWindow.setTitle(keys[activeKey])
   }, [activeKey])
 
+  const disabled =
+    !config ||
+    !config.auth_config ||
+    !config.auth_config[config.using] ||
+    (config.auth_config[config.using]!.type === 'API'
+      ? !(config!.auth_config[config!.using]! as ApiAuthConfig).token
+      : !(config.auth_config[config.using]! as CheveretoAuthConfig).username ||
+        !(config.auth_config[config.using]! as CheveretoAuthConfig).password)
+
   const tabs = [
     {
       label: (
@@ -56,7 +65,7 @@ const Home = () => {
         </Tooltip>
       ),
       key: 'upload',
-      disabled: config === null,
+      disabled,
       children: suspense(<LazyUpload />),
       destroyInactiveTabPane: true,
     },
@@ -67,7 +76,7 @@ const Home = () => {
         </Tooltip>
       ),
       key: 'list',
-      disabled: config === null,
+      disabled,
       children: suspense(<LazyList />),
       destroyInactiveTabPane: true,
     },
