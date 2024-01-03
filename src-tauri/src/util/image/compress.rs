@@ -69,12 +69,10 @@ pub async fn compress(
         return Ok(image_file);
     }
 
-    match window {
-        None => {}
-        Some(w) => {
-            w.emit(COMPRESS_EVENT_NAME, &CompressEvent::Start)?;
-        }
+    if let Some(w) = window {
+        w.emit(COMPRESS_EVENT_NAME, &CompressEvent::Start)?;
     }
+
     info!("图片尺寸超过图床限制，正在压缩图片。");
 
     let mut buf = vec![];
@@ -134,18 +132,15 @@ pub async fn compress(
 
     debug!("压缩图片已保存到本地：{:?}，压缩后体积：{}", path, size);
 
-    match window {
-        None => {}
-        Some(w) => {
-            w.emit(
-                COMPRESS_EVENT_NAME,
-                &CompressEvent::End {
-                    filename: filename.into(),
-                    original: file_size,
-                    compressed: size,
-                },
-            )?;
-        }
+    if let Some(w) = window {
+        w.emit(
+            COMPRESS_EVENT_NAME,
+            &CompressEvent::End {
+                filename: filename.into(),
+                original: file_size,
+                compressed: size,
+            },
+        )?;
     }
 
     Ok(file)
