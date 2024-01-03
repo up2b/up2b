@@ -151,6 +151,17 @@ const Setting = ({ config, setConfig }: SettingProps) => {
         [code]: apiAuthConfig,
       },
     }
+
+    // 删除非 USING 图床 keys 数量等于 1 的配置(只一个 type)
+    for (const k in newConfig.auth_config) {
+      if (
+        k !== newConfig.using &&
+        Object.keys(newConfig.auth_config[k as ManagerCode]!).length === 1
+      ) {
+        delete newConfig.auth_config[k as ManagerCode]
+      }
+    }
+
     try {
       // 更新配置
       isNew || (await updateConfig(newConfig))
@@ -288,16 +299,16 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                     pre
                       ? { ...pre, using: v }
                       : {
-                        using: v,
-                        use_proxy: false,
-                        automatic_compression: false,
-                        auth_config: {
-                          [v]: {
-                            type: imageBeds.find((item) => item.key === v)
-                              ?.type,
+                          using: v,
+                          use_proxy: false,
+                          automatic_compression: false,
+                          auth_config: {
+                            [v]: {
+                              type: imageBeds.find((item) => item.key === v)
+                                ?.type,
+                            },
                           },
                         },
-                      },
                   )
                 }
                 dropdownRender={(menu) => (
@@ -352,12 +363,12 @@ const Setting = ({ config, setConfig }: SettingProps) => {
                     disabled={
                       !(
                         config?.auth_config?.[
-                        config.using
+                          config.using
                         ] as CheveretoAuthConfig
                       )?.username ||
                       !(
                         config?.auth_config?.[
-                        config.using
+                          config.using
                         ] as CheveretoAuthConfig
                       )?.password ||
                       areObjectsEqual(defaultConfig, config)
