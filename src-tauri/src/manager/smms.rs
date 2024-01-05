@@ -16,7 +16,7 @@ use super::api::{
 use super::CompressedFormat;
 use super::{
     AllowedImageFormat, BaseManager, DeleteError, DeleteResponse, Extra, ImageItem, Manage,
-    UploadResult,
+    ManagerCode, UploadResult,
 };
 
 lazy_static! {
@@ -85,15 +85,11 @@ pub struct SmMs {
 impl SmMs {
     pub fn new(token: String) -> Self {
         let manager = BaseManager::new(
-            "sm.ms",
+            ManagerCode::Smms.name(),
+            SMMS_API.base_url().to_owned(),
             5,
-            vec![
-                AllowedImageFormat::Jpeg,
-                AllowedImageFormat::Png,
-                AllowedImageFormat::Gif,
-                AllowedImageFormat::Bmp,
-                AllowedImageFormat::Webp,
-            ],
+            SMMS_API.allowed_formats(),
+            Some(30),
             #[cfg(feature = "compress")]
             CompressedFormat::WEBP,
         );
@@ -106,7 +102,7 @@ impl SmMs {
 #[async_trait]
 impl Manage for SmMs {
     fn allowed_formats(&self) -> Vec<AllowedImageFormat> {
-        self.inner.allowed_formats()
+        self.inner.allowed_formats().to_vec()
     }
 
     fn support_stream(&self) -> bool {

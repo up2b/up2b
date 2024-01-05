@@ -188,18 +188,18 @@ impl UploadResponseController {
 pub struct Upload {
     pub(super) path: String,
     pub(super) max_size: u8,
-    pub(super) allowed_formats: Vec<AllowedImageFormat>,
+    pub(super) allowed_formats: Vec<AllowedImageFormat>, // NOTE: 此字段实际作用于 BaseManager
     #[cfg(feature = "compress")]
     pub(super) compressed_format: CompressedFormat,
     pub(super) content_type: UploadContentType,
     /// 请求体中图片之外的其他部分
     other_body: Option<Map<String, Value>>,
     pub(super) controller: UploadResponseController,
-    pub(super) timeout: u64,
+    pub(super) timeout: u8,
 }
 
 impl Upload {
-    pub fn new<T: Into<Option<u64>>, M: Into<Option<Map<String, Value>>>>(
+    pub fn new<T: Into<Option<u8>>, M: Into<Option<Map<String, Value>>>>(
         url: &str,
         max_size: u8,
         allowed_formats: Vec<AllowedImageFormat>,
@@ -209,7 +209,7 @@ impl Upload {
         controller: UploadResponseController,
         timeout: T,
     ) -> Self {
-        let secs: Option<u64> = timeout.into();
+        let secs: Option<u8> = timeout.into();
         let timeout = {
             let secs = secs.unwrap_or(5);
 

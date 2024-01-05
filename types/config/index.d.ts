@@ -1,6 +1,6 @@
-type ManagerKind = 'API' | 'CHEVERETO'
+type ManagerKind = 'API' | 'CHEVERETO' | 'GIT'
 
-type ManagerCode = 'SMMS' | 'IMGSE' | 'IMGTG'
+type ManagerCode = 'SMMS' | 'IMGSE' | 'IMGTG' | 'GITHUB'
 
 type _APIKey<T extends ManagerCode> = T extends 'SMMS' ? T : never
 
@@ -12,9 +12,19 @@ type _CheveretoKey<T extends ManagerCode> = T extends 'IMGSE' | 'IMGTG'
 
 type CheveretoManagerKey = _CheveretoKey<ManagerCode>
 
+type _GitManagerKey<T extends ManagerCode> = T extends 'GITHUB' ? T : never
+type GitManagerKey = _GitManagerKey<ManagerCode>
+
 type InferKeyType<
-  T extends ApiAuthConfig['type'] | CheveretoAuthConfig['type'],
-> = T extends 'API' ? APIManagerKey : CheveretoManagerKey
+  T extends
+  | ApiAuthConfig['type']
+  | CheveretoAuthConfig['type']
+  | GitAuthConfig['type'],
+> = T extends 'API'
+  ? APIManagerKey
+  : T extends 'CHEVERETO'
+  ? CheveretoManagerKey
+  : GitManagerKey
 
 type Extra = Record<string, string>
 
@@ -58,6 +68,8 @@ type InferAuthConfigKind<K extends ManagerCode> = K extends APIManagerKey
   ? ApiAuthConfig
   : K extends CheveretoManagerKey
   ? CheveretoAuthConfig
+  : K extends GitManagerKey
+  ? GitAuthConfig
   : never
 
 type AuthConfigKinds = {

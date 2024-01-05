@@ -1,5 +1,6 @@
 pub mod api;
 pub mod chevereto;
+pub mod git;
 pub mod smms;
 
 use async_trait::async_trait;
@@ -7,7 +8,7 @@ use base64::{engine::general_purpose, Engine as _};
 use reqwest::{header::HeaderMap, Client, Method, RequestBuilder, Response};
 use serde::{de::Visitor, Deserialize, Serialize};
 use serde_json::{Map, Value};
-use std::{collections::HashMap, fmt::Display, path::Path};
+use std::{collections::HashMap, fmt::Display, path::Path, time::Duration};
 use tauri::Window;
 use tokio::fs::{read, File};
 
@@ -16,7 +17,7 @@ use crate::{
     error::{ConfigError, Error},
     http::{
         json,
-        multipart::{upload, FileKind, UploadFile},
+        multipart::{self, FileKind, UploadFile},
     },
     util::image::guess_mime_type_by_ext,
     Result,
@@ -27,6 +28,7 @@ use {crate::config::CONFIG, crate::util::image::compress::compress};
 use self::{
     api::BaseApiManager,
     chevereto::{Imgse, Imgtg},
+    git::GitManager,
     smms::SmMs,
 };
 
@@ -93,7 +95,7 @@ pub enum AllowedImageFormat {
     Jpeg,
     Png,
     Webp,
-    // Avif, // NOTE: 多数图床不支持此格式,暂不启用
+    Avif,
     Gif,
     Bmp,
 }
@@ -121,9 +123,10 @@ pub fn use_manager(
             ManagerAuthConfigKind::Chevereto {
                 username,
                 password,
+                timeout,
                 extra,
             } => {
-                let imgse = Imgse::new(username, password, extra.as_ref());
+                let imgse = Imgse::new(username, password, *timeout, extra.as_ref());
                 Box::new(imgse)
             }
             _ => unreachable!(),
@@ -132,19 +135,55 @@ pub fn use_manager(
             ManagerAuthConfigKind::Chevereto {
                 username,
                 password,
+                timeout,
                 extra,
             } => {
-                let imgtg = Imgtg::new(username, password, extra.as_ref());
+                let imgtg = Imgtg::new(username, password, *timeout, extra.as_ref());
                 Box::new(imgtg)
+            }
+            _ => unreachable!(),
+        },
+        ManagerCode::Github => match auth_config {
+            ManagerAuthConfigKind::Git {
+                token,
+                username,
+                repository,
+                path,
+                ..
+            } => {
+                let authorization = format!("Bearer {}", token);
+
+                let github = GitManager::new(
+                    "github",
+                    "https://api.github.com",
+                    HashMap::from([
+                        (
+                            "Accept".to_owned(),
+                            "application/vnd.github+json".to_owned(),
+                        ),
+                        ("User-Agent".to_owned(), "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36".to_owned()),
+                        ("Authorization".to_owned(), authorization),
+                        ("X-GitHub-Api-Version".to_owned(), "2022-11-28".to_owned()),
+                    ]),
+                    &token,
+                    &username,
+                    &repository,
+                    path.as_deref(),
+                    Some(180),
+                    20,
+                );
+                Box::new(github)
             }
             _ => unreachable!(),
         },
         ManagerCode::Custom(s) => match auth_config {
             ManagerAuthConfigKind::API { token, api } => {
                 let manager = BaseManager::new(
-                    s,
+                    s.as_str(),
+                    api.base_url(),
                     api.max_size(),
                     api.allowed_formats().to_vec(),
+                    api.timeout().into(),
                     #[cfg(feature = "compress")]
                     api.compressed_format().clone(),
                 );
@@ -181,34 +220,65 @@ async fn is_exceeded(
     ));
 }
 
+enum RequestWithBodyMethod {
+    PUT,
+    POST,
+}
+
+impl RequestWithBodyMethod {
+    fn as_method(&self) -> Method {
+        match self {
+            RequestWithBodyMethod::PUT => Method::PUT,
+            RequestWithBodyMethod::POST => Method::POST,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct BaseManager {
     name: String,
     max_size: u8,
+    base_url: String,
     client: Client,
     allowed_formats: Vec<AllowedImageFormat>,
     #[cfg(feature = "compress")]
     compressed_format: CompressedFormat,
+    timeout: Duration,
 }
 
 impl BaseManager {
-    fn new<S: Into<String>>(
+    fn new<S: Into<String>, A: Into<Vec<AllowedImageFormat>>>(
         name: S,
+        base_url: S,
         max_size: u8,
-        allowed_formats: Vec<AllowedImageFormat>,
+        allowed_formats: A,
+        timeout: Option<u8>,
         #[cfg(feature = "compress")] compressed_format: CompressedFormat,
     ) -> Self {
         Self {
             name: name.into(),
+            base_url: base_url.into(),
             max_size,
             client: Client::new(),
-            allowed_formats,
+            allowed_formats: allowed_formats.into(),
+            timeout: Duration::from_secs(timeout.unwrap_or(5).into()),
             #[cfg(feature = "compress")]
             compressed_format,
         }
     }
 
+    fn url(&self, path: &str) -> String {
+        let char = path.chars().nth(0);
+
+        if char != Some('/') {
+            return format!("{}/{}", self.base_url, path);
+        }
+
+        self.base_url.to_owned() + path
+    }
+
     async fn get(&self, url: &str, headers: HeaderMap) -> Result<Response> {
+        trace!("发起 GET 请求：url={}, headers={:?}", url, headers);
         let resp = self.request(Method::GET, url, headers).send().await?;
 
         Ok(resp)
@@ -226,11 +296,16 @@ impl BaseManager {
         Ok(resp)
     }
 
-    async fn json<T: Serialize>(&self, url: &str, headers: HeaderMap, body: T) -> Result<Response> {
+    /// 不需要获取上传进度时使用此方法发起 json 请求
+    async fn json<T: Serialize>(
+        &self,
+        method: RequestWithBodyMethod,
+        url: &str,
+        headers: HeaderMap,
+        body: T,
+    ) -> Result<Response> {
         let resp = self
-            .client
-            .post(url)
-            .headers(headers)
+            .request(method.as_method(), url, headers)
             .json(&body)
             .send()
             .await?;
@@ -239,7 +314,10 @@ impl BaseManager {
     }
 
     fn request(&self, method: Method, url: &str, headers: HeaderMap) -> RequestBuilder {
-        self.client.request(method, url).headers(headers)
+        self.client
+            .request(method, url)
+            .headers(headers)
+            .timeout(self.timeout)
     }
 
     async fn compress(
@@ -277,22 +355,24 @@ impl BaseManager {
         Ok(file)
     }
 
-    async fn upload_json(
+    async fn upload_json<T: Serialize>(
         &self,
         window: Option<Window>,
+        method: RequestWithBodyMethod,
         id: u32,
         url: &str,
         header: HeaderMap,
         key: &str,
         image_path: &Path,
-        form: Option<&[(&str, &str)]>,
-        timeout: u64,
+        form: Option<T>,
     ) -> Result<Response> {
         // TODO: base64 上传对体积的限制待处理
         let file_data = read(image_path).await?;
         let file_data = general_purpose::STANDARD.encode(file_data);
 
         let mut body = serde_json::json!(form);
+
+        debug!("序列化后除图片外的请求体：{}", body);
 
         match body {
             serde_json::Value::Null => {
@@ -309,9 +389,9 @@ impl BaseManager {
             _ => return Err(Error::Other("错误的类型".to_owned())),
         };
 
-        let builder = self.request(Method::POST, url, header);
+        let builder = self.request(method.as_method(), url, header);
 
-        let resp = json::upload(builder, window.as_ref(), body, id, timeout).await?;
+        let resp = json::upload(builder, window.as_ref(), body, id).await?;
 
         Ok(resp)
     }
@@ -326,7 +406,6 @@ impl BaseManager {
         file_part_name: &str,
         file_kind: &FileKind,
         form: Option<&[(&str, &str)]>,
-        timeout: u64,
     ) -> Result<Response> {
         let file = File::open(&image_path).await?;
         let filename = image_path.file_name().unwrap().to_str().unwrap();
@@ -346,69 +425,17 @@ impl BaseManager {
 
         debug!("guess mime type: {}", mime_type);
 
-        let response = upload(
-            &self.client,
+        let request_builder = self.request(Method::POST, url, header);
+
+        let response = multipart::upload(
+            request_builder,
             window.as_ref(),
-            url,
-            header,
             id,
             file_part_name,
             filename,
             UploadFile::new(file, file_kind),
             &mime_type,
             form,
-            timeout,
-        )
-        .await
-        .map_err(|e| {
-            error!("上传图片出错：{}", e);
-            e
-        })?;
-
-        Ok(response)
-    }
-
-    async fn upload(
-        &self,
-        window: Option<Window>,
-        id: u32,
-        url: &str,
-        header: HeaderMap,
-        image_path: &Path,
-        file_kind: &FileKind,
-        file_part_name: &str,
-        form: Option<&[(&str, &str)]>,
-    ) -> Result<Response> {
-        let file = File::open(&image_path).await?;
-        let filename = image_path.file_name().unwrap().to_str().unwrap();
-
-        let file = self
-            .compress(
-                #[cfg(feature = "compress")]
-                window.as_ref(),
-                file,
-                image_path,
-                #[cfg(feature = "compress")]
-                filename,
-            )
-            .await?;
-
-        let mime_type = guess_mime_type_by_ext(image_path.extension().unwrap().to_str().unwrap());
-
-        debug!("guess mime type: {}", mime_type);
-
-        let response = upload(
-            &self.client,
-            window.as_ref(),
-            url,
-            header,
-            id,
-            file_part_name,
-            filename,
-            UploadFile::new(file, file_kind),
-            &mime_type,
-            form,
-            60,
         )
         .await
         .map_err(|e| {
@@ -424,6 +451,7 @@ impl BaseManager {
 #[serde(rename_all = "UPPERCASE")]
 pub enum ManagerKind {
     API,
+    Git,
     Chevereto,
 }
 
@@ -432,6 +460,7 @@ pub enum ManagerCode {
     Smms, // 内置 smms 支持，与 Custom
     Imgse,
     Imgtg,
+    Github,
     Custom(String),
 }
 
@@ -444,6 +473,7 @@ impl Serialize for ManagerCode {
             ManagerCode::Smms => serializer.serialize_str("SMMS"),
             ManagerCode::Imgse => serializer.serialize_str("IMGSE"),
             ManagerCode::Imgtg => serializer.serialize_str("IMGTG"),
+            ManagerCode::Github => serializer.serialize_str("GITHUB"),
             ManagerCode::Custom(s) => {
                 serializer.serialize_str(&format!("CUSTOM-{}", s.to_uppercase()))
             }
@@ -479,9 +509,10 @@ impl<'de> Deserialize<'de> for ManagerCode {
                         "SMMS" => Ok(ManagerCode::Smms),
                         "IMGSE" => Ok(ManagerCode::Imgse),
                         "IMGTG" => Ok(ManagerCode::Imgtg),
+                        "GITHUB" => Ok(ManagerCode::Github),
                         _ => Err(serde::de::Error::unknown_variant(
                             value,
-                            &["SMMS", "IMGSE", "IMGTG", "CUSTOM"],
+                            &["SMMS", "IMGSE", "IMGTG", "GITHUB", "CUSTOM-{}"],
                         )),
                     }
                 }
@@ -518,6 +549,7 @@ impl ManagerCode {
             ManagerCode::Smms => "sm.ms".to_owned(),
             ManagerCode::Imgse => "imgse.com".to_owned(),
             ManagerCode::Imgtg => "imgtg.com".to_owned(),
+            ManagerCode::Github => "github.com".to_owned(),
             ManagerCode::Custom(s) => "CUSTOM-".to_owned() + s,
         }
     }
@@ -527,6 +559,7 @@ impl ManagerCode {
             ManagerCode::Smms => Some("https://sm.ms"),
             ManagerCode::Imgse => Some("https://imgse.com"),
             ManagerCode::Imgtg => Some("https://imgtg.com"),
+            ManagerCode::Github => Some("https://github.com"),
             _ => None,
         }
     }
@@ -551,6 +584,12 @@ impl ManagerCode {
                 key: self,
                 r#type: ManagerKind::Chevereto,
             },
+            ManagerCode::Github => ManagerItem {
+                name: self.name(),
+                index: self.index(),
+                key: self,
+                r#type: ManagerKind::Git,
+            },
             ManagerCode::Custom(ref s) => ManagerItem {
                 name: s.clone(),
                 index: None,
@@ -562,9 +601,10 @@ impl ManagerCode {
 }
 
 lazy_static! {
-    pub(crate) static ref MANAGERS: [ManagerItem; 3] = [
+    pub(crate) static ref MANAGERS: [ManagerItem; 4] = [
         ManagerCode::Smms.to_manager_item(),
         ManagerCode::Imgse.to_manager_item(),
         ManagerCode::Imgtg.to_manager_item(),
+        ManagerCode::Github.to_manager_item()
     ];
 }

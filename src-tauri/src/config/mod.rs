@@ -45,9 +45,15 @@ pub enum ManagerAuthConfigKind {
         api: Api,
     },
     Git {
+        base_url: String,
         token: String,
+        username: String,
+        repository: String,
+        /// 保存目录,默认为 up2b
+        path: Option<String>,
     },
     Chevereto {
+        timeout: Option<u8>,
         username: String,
         password: String,
         extra: Option<HashMap<String, String>>,
