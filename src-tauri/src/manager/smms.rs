@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::Window;
 
@@ -17,7 +16,7 @@ use super::api::{
 use super::CompressedFormat;
 use super::{
     AllowedImageFormat, BaseManager, DeleteError, DeleteResponse, Extra, ImageItem, Manage,
-    UploadResult,
+    ManagerCode, UploadResult,
 };
 
 lazy_static! {
@@ -78,63 +77,6 @@ lazy_static! {
     };
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct HistoryDataItem {
-    width: u16,
-    height: u16,
-    filename: String,
-    storename: String,
-    size: u64,
-    path: String,
-    hash: String,
-    created_at: String,
-    url: String,
-    delete: String,
-    page: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct HistoryResponse {
-    success: bool,
-    code: String,
-    message: String,
-    data: Vec<HistoryDataItem>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct SmDeleteResponse {
-    success: bool,
-    code: String,
-    message: String,
-    #[serde(rename = "RequestId")]
-    request_id: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct SmUploadData {
-    file_id: u32,
-    width: u32,
-    height: u32,
-    filename: String,
-    storename: String,
-    size: u32,
-    path: String,
-    hash: String,
-    url: String,
-    delete: String,
-    page: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct SmUploadResponse {
-    success: bool,
-    code: String,
-    message: String,
-    #[serde(rename = "RequestId")]
-    request_id: String,
-    data: Option<SmUploadData>,
-}
-
 #[derive(Debug)]
 pub struct SmMs {
     inner: BaseApiManager,
@@ -143,15 +85,11 @@ pub struct SmMs {
 impl SmMs {
     pub fn new(token: String) -> Self {
         let manager = BaseManager::new(
-            "sm.ms",
+            ManagerCode::Smms.name(),
+            SMMS_API.base_url().to_owned(),
             5,
-            vec![
-                AllowedImageFormat::Jpeg,
-                AllowedImageFormat::Png,
-                AllowedImageFormat::Gif,
-                AllowedImageFormat::Bmp,
-                AllowedImageFormat::Webp,
-            ],
+            SMMS_API.allowed_formats(),
+            Some(30),
             #[cfg(feature = "compress")]
             CompressedFormat::WEBP,
         );
@@ -164,7 +102,7 @@ impl SmMs {
 #[async_trait]
 impl Manage for SmMs {
     fn allowed_formats(&self) -> Vec<AllowedImageFormat> {
-        self.inner.allowed_formats()
+        self.inner.allowed_formats().to_vec()
     }
 
     fn support_stream(&self) -> bool {

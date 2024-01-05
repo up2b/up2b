@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { message, Flex, Spin, FloatButton } from 'antd'
+import { message, Flex, Spin, FloatButton, Empty } from 'antd'
 import { SyncOutlined } from '@ant-design/icons'
 import {
   setStorage,
@@ -52,15 +52,24 @@ const ImageList = () => {
 
     setLoading(true)
 
-    const list = await getAllImages()
+    try {
+      const list = await getAllImages()
 
-    list.reverse()
+      list.reverse()
 
-    setLoading(false)
+      setLoading(false)
 
-    setStorage(imageBedCode!, list)
+      setStorage(imageBedCode!, list)
 
-    setImages(list)
+      setImages(list)
+    } catch (e) {
+      let error = String(e)
+      if (error === '资源不存在') {
+        // 只有 github 有这个错误信息
+        setLoading(false)
+        message.warning('目录为空，请先上传一张图片')
+      }
+    }
   }
 
   const afterDeleting = (url: string) => {
@@ -74,28 +83,35 @@ const ImageList = () => {
   }
 
   return (
-    <Spin spinning={loading}>
-      <div id="image-list">
+    <Spin spinning={loading} className="loading-list">
+      <div
+        id="image-list"
+        className={images.length ? undefined : 'image-list__empty'}
+      >
         {contextHolder}
 
-        <Flex wrap="wrap" gap="small" justify="center">
-          {images.map((item, index) => (
-            <div key={index} className="image-card-container">
-              {suspense(
-                <LazyImageCard
-                  url={item.url}
-                  thumb={item.thumb}
-                  status={{
-                    type: 'success',
-                    deleteId: item.deleted_id,
-                    afterDeleting: afterDeleting,
-                  }}
-                  messageApi={messageApi}
-                />,
-              )}
-            </div>
-          ))}
-        </Flex>
+        {!images.length ? (
+          <Empty description={false} />
+        ) : (
+          <Flex wrap="wrap" gap="small" justify="center">
+            {images.map((item, index) => (
+              <div key={index} className="image-card-container">
+                {suspense(
+                  <LazyImageCard
+                    url={item.url}
+                    thumb={item.thumb}
+                    status={{
+                      type: 'success',
+                      deleteId: item.deleted_id,
+                      afterDeleting: afterDeleting,
+                    }}
+                    messageApi={messageApi}
+                  />,
+                )}
+              </div>
+            ))}
+          </Flex>
+        )}
 
         <FloatButton
           icon={<SyncOutlined />}

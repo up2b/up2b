@@ -29,7 +29,9 @@ export const getSupportStream = async () => {
   return await invoke<boolean>('support_stream')
 }
 
-export const verify = async <T extends APIManagerKey | CheveretoManagerKey>(
+export const verify = async <
+  T extends APIManagerKey | CheveretoManagerKey | GitManagerKey,
+>(
   imageBed: T,
   config: InferAuthConfigKind<T>,
 ) => {

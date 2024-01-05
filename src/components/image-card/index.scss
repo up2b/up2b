@@ -21,17 +21,17 @@
     background-color: rgba($color: #fff, $alpha: 0.7);
     z-index: 9;
   }
-}
 
-.ant-image-mask {
-  cursor: default;
-  border-radius: var(--ant-border-radius-lg);
+  .ant-image-mask {
+    cursor: default;
+    border-radius: var(--ant-border-radius-lg);
 
-  .anticon {
-    cursor: pointer;
+    .anticon {
+      cursor: pointer;
 
-    &:not(:first-child) {
-      margin-left: 1rem;
+      &:not(:first-child) {
+        margin-left: 1rem;
+      }
     }
   }
 }

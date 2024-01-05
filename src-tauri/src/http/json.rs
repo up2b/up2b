@@ -2,7 +2,6 @@ use std::{
     pin::Pin,
     sync::Mutex,
     task::{Context, Poll},
-    time::Duration,
 };
 
 use bytes::Bytes;
@@ -76,12 +75,11 @@ pub async fn bytes_to_body(id: u32, window: Window, bytes: Vec<u8>) -> Result<re
     )))
 }
 
-pub async fn upload<S: Into<Option<u64>>>(
+pub async fn upload(
     request_builder: RequestBuilder,
     window: Option<&Window>,
     body: Value,
     id: u32,
-    seconds: S,
 ) -> Result<Response> {
     let builder = match window {
         None => request_builder.json(&body),
@@ -94,9 +92,7 @@ pub async fn upload<S: Into<Option<u64>>>(
         }
     };
 
-    let timeout_duration = Duration::from_secs(seconds.into().unwrap_or(5));
-
-    let resp = builder.timeout(timeout_duration).send().await?;
+    let resp = builder.send().await?;
 
     Ok(resp)
 }

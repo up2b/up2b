@@ -140,9 +140,8 @@ fn unquote(text: &str) -> String {
 
 #[derive(Debug, Clone)]
 pub struct Chevereto {
-    manager: BaseManager,
+    inner: BaseManager,
     code: ManagerCode,
-    base_url: String,
     file_kind: FileKind,
     file_part_name: String,
     username: String,
@@ -161,6 +160,7 @@ impl Chevereto {
         max_size: u8,
         file_kind: FileKind,
         allowed_formats: Vec<AllowedImageFormat>,
+        timeout: u8,
         extra: Option<&HashMap<String, String>>,
         #[cfg(feature = "compress")] compressed_format: CompressedFormat,
     ) -> Self {
@@ -171,15 +171,16 @@ impl Chevereto {
 
         let manager = BaseManager::new(
             name,
+            base_url,
             max_size,
             allowed_formats,
+            Some(timeout),
             #[cfg(feature = "compress")]
             compressed_format,
         );
 
         Self {
-            manager,
-            base_url: base_url.into(),
+            inner: manager,
             file_part_name: "source".to_string(),
             file_kind,
             username: username.into(),
@@ -188,10 +189,6 @@ impl Chevereto {
             cookie: cookie.cloned(),
             code,
         }
-    }
-
-    fn url(&self, path: &str) -> String {
-        self.base_url.to_owned() + path
     }
 
     async fn get_auth_data(&self, no_cookie: bool) -> Result<Option<(String, HeaderMap)>> {
@@ -205,9 +202,9 @@ impl Chevereto {
 
         debug!("get auth data: request headers: {:?}", headers);
 
-        let url = self.url("login");
+        let url = self.inner.url("login");
 
-        let resp = self.manager.post(&url, headers).await?;
+        let resp = self.inner.post(&url, headers).await?;
 
         let pattern = r#"PF\.obj\.config\.auth_token = "([a-f0-9]{40})";"#;
         let re = Regex::new(pattern).unwrap();
@@ -260,6 +257,7 @@ impl Chevereto {
                 let auth_config = ManagerAuthConfigKind::Chevereto {
                     username: self.username.clone(),
                     password: self.password.clone(),
+                    timeout: Some(self.inner.timeout.as_secs().try_into().unwrap()),
                     extra: Some(HashMap::from([
                         ("cookie".into(), self.cookie.clone().unwrap()),
                         ("token".into(), self.token.clone().unwrap()),
@@ -305,7 +303,7 @@ impl Chevereto {
         let mut headers = self.header();
         headers.insert("Cookie", cookie.parse().unwrap());
 
-        let url = self.url("login");
+        let url = self.inner.url("login");
 
         let params = [
             ("login-subject", &self.username),
@@ -396,11 +394,16 @@ impl Chevereto {
         debug!("requesting ablum: page={}", page);
 
         let url = match seek {
-            None => format!("{}/?page={}", self.url(&self.username), page),
-            Some(s) => format!("{}/?page={}&seek={}", self.url(&self.username), page, s),
+            None => format!("{}/?page={}", self.inner.url(&self.username), page),
+            Some(s) => format!(
+                "{}/?page={}&seek={}",
+                self.inner.url(&self.username),
+                page,
+                s
+            ),
         };
 
-        let resp = self.manager.get(&url, self.header()).await?;
+        let resp = self.inner.get(&url, self.header()).await?;
 
         let status = resp.status();
 
@@ -472,7 +475,7 @@ impl Chevereto {
     async fn delete_image_by_id(&mut self, id: &str, retry_counter: u8) -> Result<DeleteResponse> {
         trace!("deleting an image");
 
-        let url = self.url("json");
+        let url = self.inner.url("json");
 
         let form = HashMap::from([
             ("auth_token", self.token.clone().unwrap()),
@@ -486,7 +489,7 @@ impl Chevereto {
         let headers = self.header();
         debug!("request: form={:?}, headers={:?}", form, headers);
 
-        let request = self.manager.request(Method::POST, &url, headers);
+        let request = self.inner.request(Method::POST, &url, headers);
         let response = request.form(&form).send().await?;
 
         let status = response.status();
@@ -554,7 +557,7 @@ impl Chevereto {
             self.login().await?;
         }
 
-        let url = self.url("json");
+        let url = self.inner.url("json");
 
         let mut headers = HeaderMap::new();
         headers.insert("Accept", "application/json".parse().unwrap());
@@ -577,15 +580,15 @@ impl Chevereto {
         debug!("request: form={:?}, headers={:?}", form, headers);
 
         let response = self
-            .manager
-            .upload(
+            .inner
+            .upload_multipart(
                 window.clone(),
                 id,
                 &url,
                 headers,
                 image_path,
-                &self.file_kind,
                 &self.file_part_name,
+                &self.file_kind,
                 Some(form),
             )
             .await?;

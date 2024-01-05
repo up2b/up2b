@@ -156,8 +156,6 @@ const Upload = () => {
 
     if (compressListener) compressListener()
 
-    console.log(resp)
-
     if (resp.type === 'Error') {
       if (resp.code === 'REPEATED') {
         const url = 'https' + resp.detail.split('https')[1]
@@ -223,7 +221,7 @@ const Upload = () => {
     <>
       {contextHolder}
 
-      <div className="upload">
+      <div className={'upload' + (images.length === 0 ? ' upload__empty' : '')}>
         {images.length === 0 ? (
           <>
             <CloudUploadOutlined className="upload-icon" />
@@ -262,7 +260,7 @@ const Upload = () => {
             ))}
 
             {images.length &&
-              typeof images[images.length - 1].status === 'object' ? (
+            typeof images[images.length - 1].status === 'object' ? (
               <div className="upload-add">
                 <PlusOutlined />
               </div>
