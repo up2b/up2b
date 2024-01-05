@@ -7,7 +7,7 @@
     flex: 1;
     display: flex;
 
-    & > div {
+    &>div {
       display: flex;
     }
 
@@ -35,4 +35,14 @@
     width: 152px;
     height: 182px;
   }
+}
+
+.image-list__empty {
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.ant-spin-container:has(.image-list__empty) {
+  width: 100%;
 }

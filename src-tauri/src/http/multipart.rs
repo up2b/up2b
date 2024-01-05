@@ -1,11 +1,8 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::sync::{Arc, Mutex};
 
 use futures_util::TryStreamExt;
 use read_progress_stream::ReadProgressStream;
-use reqwest::{header::HeaderMap, multipart::Part, Client, Response};
+use reqwest::{multipart::Part, RequestBuilder, Response};
 use serde::{Deserialize, Serialize};
 use tauri::Window;
 use tokio::{fs::File, io::AsyncReadExt};
@@ -56,18 +53,15 @@ impl<'r> UploadFile<'r> {
     }
 }
 
-pub async fn upload<S: Into<Option<u64>>>(
-    client: &Client,
+pub async fn upload(
+    request_builder: RequestBuilder,
     window: Option<&Window>,
-    url: &str,
-    headers: HeaderMap,
     id: u32,
     part_name: &str,
     filename: &str,
     mut upload_file: UploadFile<'_>,
     mime_type: &str,
     texts: Option<&[(&str, &str)]>,
-    seconds: S,
 ) -> Result<Response> {
     let file_part = match &window {
         None => Part::stream(upload_file.file),
@@ -99,15 +93,7 @@ pub async fn upload<S: Into<Option<u64>>>(
         }
     }
 
-    let timeout_duration = Duration::from_secs(seconds.into().unwrap_or(5));
-
-    let resp = client
-        .post(url)
-        .headers(headers.clone())
-        .multipart(form)
-        .timeout(timeout_duration)
-        .send()
-        .await?;
+    let resp = request_builder.multipart(form).send().await?;
 
     Ok(resp)
 }

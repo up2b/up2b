@@ -74,12 +74,21 @@ pub enum Error {
 
     #[error("响应体中未找到 key：{0}")]
     KeyNotFound(String),
+    #[error("响应体中 key[{0}] 对应的类型不匹配")]
+    KeyNotMatch(String),
+
+    #[error(transparent)]
+    Path(#[from] PathError),
+
+    #[error(transparent)]
+    Git(#[from] GitError),
 }
 
 impl Error {
     pub fn as_string(&self) -> String {
         match self {
             Self::OverSize(_, _, _, _) => "OVER_SIZE".to_owned(),
+            Self::Path(e) => e.as_str().to_owned(),
             Self::Upload(e) => match e {
                 UploadError::Repeat(_) => "REPEATED".to_owned(),
                 _ => "UNKOWN".to_owned(),
@@ -124,6 +133,8 @@ pub enum AuthConfigError {
 pub enum HeaderError {
     #[error(transparent)]
     InvalidName(reqwest::header::InvalidHeaderName),
+    #[error(transparent)]
+    InvalidValue(reqwest::header::InvalidHeaderValue),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -132,4 +143,48 @@ pub enum UploadError {
     Error(String),
     #[error("{0}")]
     Repeat(String),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum PathError {
+    #[error("路径不存在")]
+    NotExists,
+    #[error("路径不是文件")]
+    NotFile,
+}
+
+impl PathError {
+    pub fn as_str(&self) -> &str {
+        match self {
+            PathError::NotExists => "NOT_EXISTS",
+            PathError::NotFile => "NOT_FILE",
+        }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum GitError {
+    #[error("资源不存在")]
+    NotFound,
+    #[error("{0}")]
+    Other(String),
+}
+
+impl GitError {
+    pub fn as_str(&self) -> &str {
+        match self {
+            GitError::NotFound => "NOT_FOUND",
+            GitError::Other(s) => &s,
+        }
+    }
+}
+
+impl Into<GitError> for String {
+    fn into(self) -> GitError {
+        if self == "Not Found" {
+            return GitError::NotFound;
+        }
+
+        GitError::Other(self)
+    }
 }

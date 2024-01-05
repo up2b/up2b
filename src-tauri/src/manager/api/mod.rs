@@ -13,7 +13,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tauri::Window;
 
-use crate::{error::HeaderError, http::multipart::FileKind, Result};
+use crate::{
+    error::HeaderError, http::multipart::FileKind, manager::RequestWithBodyMethod, Result,
+};
 
 pub(crate) use self::delete::Delete;
 pub(crate) use self::delete::{DeleteKeyKind, DeleteMethod, DeleteResponseController};
@@ -70,8 +72,16 @@ impl Api {
         }
     }
 
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
     pub fn max_size(&self) -> u8 {
         self.upload.max_size
+    }
+
+    pub fn timeout(&self) -> u8 {
+        self.upload.timeout
     }
 
     pub fn allowed_formats(&self) -> &[AllowedImageFormat] {
@@ -100,12 +110,8 @@ impl BaseApiManager {
         }
     }
 
-    pub fn allowed_formats(&self) -> Vec<AllowedImageFormat> {
-        self.api.upload.allowed_formats.clone()
-    }
-
-    pub fn url(&self, path: &str) -> String {
-        self.api.base_url.to_owned() + path
+    pub fn allowed_formats(&self) -> &[AllowedImageFormat] {
+        &self.inner.allowed_formats
     }
 
     fn headers(&self) -> Result<HeaderMap> {
@@ -131,7 +137,7 @@ impl BaseApiManager {
         let response = match &self.api.list.method {
             ListRequestMethod::Get => {
                 self.inner
-                    .get(&self.url(&self.api.list.path), self.headers()?)
+                    .get(&self.inner.url(&self.api.list.path), self.headers()?)
                     .await?
             }
             ListRequestMethod::Post { body } => {
@@ -156,10 +162,10 @@ impl BaseApiManager {
     async fn delete_by_delete(&self, kind: &DeleteKeyKind, id: &str) -> Result<Response> {
         // DELETE 删除认证方式只能是 headers
         let url = match kind {
-            DeleteKeyKind::Path => self.url(&(self.api.delete.path.to_owned() + id)),
+            DeleteKeyKind::Path => self.inner.url(&(self.api.delete.path.to_owned() + id)),
             DeleteKeyKind::Query { key } => format!(
                 "{}{}?{}={}",
-                self.api.base_url, self.api.delete.path, key, id
+                self.inner.base_url, self.api.delete.path, key, id
             ),
         };
 
@@ -169,10 +175,10 @@ impl BaseApiManager {
     async fn delete_by_get(&self, kind: &DeleteKeyKind, id: &str) -> Result<Response> {
         // GET 删除认证方式只能是 headers
         let url = match kind {
-            DeleteKeyKind::Path => self.url(&(self.api.delete.path.to_owned() + id)),
+            DeleteKeyKind::Path => self.inner.url(&(self.api.delete.path.to_owned() + id)),
             DeleteKeyKind::Query { key } => format!(
                 "{}{}?{}={}",
-                self.api.base_url, self.api.delete.path, key, id
+                self.inner.base_url, self.api.delete.path, key, id
             ),
         };
 
@@ -194,7 +200,12 @@ impl BaseApiManager {
         }
 
         self.inner
-            .json(&self.url(&self.api.delete.path), self.headers()?, body)
+            .json(
+                RequestWithBodyMethod::POST,
+                &self.inner.url(&self.api.delete.path),
+                self.headers()?,
+                body,
+            )
             .await
     }
 
@@ -224,13 +235,13 @@ impl BaseApiManager {
                 self.inner
                     .upload_json(
                         window,
+                        RequestWithBodyMethod::POST,
                         id,
-                        &self.url(&self.api.upload.path),
+                        &self.inner.url(&self.api.upload.path),
                         headers,
                         key,
                         image_path,
                         form,
-                        self.api.upload.timeout,
                     )
                     .await?
             }
@@ -242,13 +253,12 @@ impl BaseApiManager {
                     .upload_multipart(
                         window,
                         id,
-                        &self.url(&self.api.upload.path),
+                        &self.inner.url(&self.api.upload.path),
                         headers,
                         image_path,
                         &file_part_name,
                         file_kind,
                         form,
-                        self.api.upload.timeout,
                     )
                     .await?
             }

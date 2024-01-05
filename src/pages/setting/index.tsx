@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react'
 import {
   Divider,
   Form,
-  Input,
   Select,
   Space,
   Switch,
@@ -25,6 +24,22 @@ import { open } from '@tauri-apps/api/shell'
 import { PlusOutlined } from '@ant-design/icons'
 import AddCustom from './components/add.tsx'
 import ApiSettingForm from './components/api/form.tsx'
+import CheveretoSetting from './components/chevereto.tsx'
+import GitSetting from './components/git.tsx'
+
+/*
+ * 删除非 USING 图床 keys 数量等于 1 的配置(只一个 type)
+ */
+export const cleanConfig = (config: Config) => {
+  for (const k in config.auth_config) {
+    if (
+      k !== config.using &&
+      Object.keys(config.auth_config[k as ManagerCode]!).length === 1
+    ) {
+      delete config.auth_config[k as ManagerCode]
+    }
+  }
+}
 
 const { Option } = Select
 
@@ -102,15 +117,7 @@ const Setting = ({ config, setConfig }: SettingProps) => {
   const onUpdateConfig = async () => {
     if (!config) return
 
-    // 删除非 USING 图床 keys 数量等于 1 的配置(只一个 type)
-    for (const k in config.auth_config) {
-      if (
-        k !== config.using &&
-        Object.keys(config.auth_config[k as ManagerCode]!).length === 1
-      ) {
-        delete config.auth_config[k as ManagerCode]
-      }
-    }
+    cleanConfig(config)
 
     let extra: Extra | null = null
 
@@ -151,6 +158,9 @@ const Setting = ({ config, setConfig }: SettingProps) => {
         [code]: apiAuthConfig,
       },
     }
+
+    cleanConfig(newConfig)
+
     try {
       // 更新配置
       isNew || (await updateConfig(newConfig))
@@ -188,56 +198,31 @@ const Setting = ({ config, setConfig }: SettingProps) => {
       case 'CHEVERETO':
         const commonKey = config!.using as InferKeyType<typeof imageBedKind>
         return (
-          <>
-            <Space>
-              <Form.Item label="用户名">
-                <Input
-                  placeholder="输入用户名"
-                  value={config?.auth_config?.[commonKey]?.username || ''}
-                  onChange={(e) =>
-                    setConfig((pre) => ({
-                      ...pre!,
-                      auth_config: {
-                        ...config?.auth_config,
-                        [commonKey]: {
-                          type: 'COMMON',
-                          username: e.target.value,
-                          password:
-                            config?.auth_config[commonKey]?.password || '',
-                        },
-                      },
-                    }))
-                  }
-                />
-              </Form.Item>
-              <Form.Item label="密码">
-                <Input.Password
-                  placeholder="输入密码"
-                  value={
-                    config?.auth_config?.[config.using as CheveretoManagerKey]
-                      ?.password || ''
-                  }
-                  onChange={(e) => {
-                    setConfig((pre) => ({
-                      ...pre!,
-                      auth_config: {
-                        ...config?.auth_config,
-                        [commonKey]: {
-                          type: 'CHEVERETO',
-                          password: e.target.value,
-                          username:
-                            config?.auth_config[commonKey]?.username || '',
-                        },
-                      },
-                    }))
-                  }}
-                />
-              </Form.Item>
-            </Space>
-          </>
+          <CheveretoSetting
+            defaultConfig={defaultConfig!}
+            config={config!}
+            setConfig={setConfig}
+            managerKey={commonKey}
+            verifying={verifying}
+            onUpdateConfig={onUpdateConfig}
+          />
+        )
+      case 'GIT':
+        const key = config!.using as InferKeyType<typeof imageBedKind>
+        return (
+          <GitSetting
+            config={config!}
+            setConfig={setConfig}
+            setDefaultConfig={setDefaultConfig}
+            defaultConfig={defaultConfig!}
+            managerKey={key}
+            message={messageApi}
+          />
         )
     }
   }
+
+  console.log(config)
 
   return (
     <div id="setting">
@@ -326,49 +311,6 @@ const Setting = ({ config, setConfig }: SettingProps) => {
           </Form.Item>
 
           {config?.using ? configKind() : null}
-
-          {filterImageBed()?.type === 'API' ? null : (
-            <>
-              <Divider />
-
-              <Form.Item
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Space>
-                  <Button
-                    onClick={() => location.reload()}
-                    disabled={areObjectsEqual(defaultConfig, config)}
-                  >
-                    取消
-                  </Button>
-                  <Button
-                    type="primary"
-                    loading={verifying}
-                    onClick={onUpdateConfig}
-                    disabled={
-                      !(
-                        config?.auth_config?.[
-                        config.using
-                        ] as CheveretoAuthConfig
-                      )?.username ||
-                      !(
-                        config?.auth_config?.[
-                        config.using
-                        ] as CheveretoAuthConfig
-                      )?.password ||
-                      areObjectsEqual(defaultConfig, config)
-                    }
-                  >
-                    {verifying ? '验证中...' : '保存'}
-                  </Button>
-                </Space>
-              </Form.Item>
-            </>
-          )}
         </div>
       ) : null}
 

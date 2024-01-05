@@ -23,6 +23,7 @@ impl Imgtg {
     pub fn new<S: Into<String>>(
         username: S,
         password: S,
+        timeout: Option<u8>,
         extra: Option<&HashMap<String, String>>,
     ) -> Self {
         Self {
@@ -41,6 +42,7 @@ impl Imgtg {
                     AllowedImageFormat::Gif,
                     AllowedImageFormat::Webp,
                 ],
+                timeout.unwrap_or(60),
                 extra,
                 #[cfg(feature = "compress")]
                 CompressedFormat::WEBP,
@@ -52,7 +54,7 @@ impl Imgtg {
 #[async_trait]
 impl Manage for Imgtg {
     fn allowed_formats(&self) -> Vec<AllowedImageFormat> {
-        self.inner.manager.allowed_formats.clone()
+        self.inner.inner.allowed_formats.clone()
     }
 
     fn support_stream(&self) -> bool {

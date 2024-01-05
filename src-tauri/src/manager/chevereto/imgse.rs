@@ -23,6 +23,7 @@ impl Imgse {
     pub fn new<S: Into<String>>(
         username: S,
         password: S,
+        timeout: Option<u8>,
         extra: Option<&HashMap<String, String>>,
     ) -> Self {
         Self {
@@ -39,6 +40,7 @@ impl Imgse {
                     AllowedImageFormat::Png,
                     AllowedImageFormat::Gif,
                 ],
+                timeout.unwrap_or(60),
                 extra,
                 #[cfg(feature = "compress")]
                 CompressedFormat::JPEG,
@@ -50,7 +52,7 @@ impl Imgse {
 #[async_trait]
 impl Manage for Imgse {
     fn allowed_formats(&self) -> Vec<AllowedImageFormat> {
-        self.inner.manager.allowed_formats.to_owned()
+        self.inner.inner.allowed_formats.to_owned()
     }
 
     fn support_stream(&self) -> bool {

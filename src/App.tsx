@@ -54,7 +54,12 @@ const Home = () => {
     !config.auth_config[config.using] ||
     (config.auth_config[config.using]!.type === 'API'
       ? !(config!.auth_config[config!.using]! as ApiAuthConfig).token
-      : !(config.auth_config[config.using]! as CheveretoAuthConfig).username ||
+      : (config.auth_config[config!.using]! as GitAuthConfig).type === 'GIT'
+        ? !(config.auth_config[config.using] as GitAuthConfig).token ||
+        !(config.auth_config[config.using] as GitAuthConfig).username ||
+        !(config.auth_config[config.using] as GitAuthConfig).repository
+        : !(config.auth_config[config.using]! as CheveretoAuthConfig)
+          .username ||
         !(config.auth_config[config.using]! as CheveretoAuthConfig).password)
 
   const tabs = [
