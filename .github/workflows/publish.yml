@@ -16,10 +16,12 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v3
+
       - name: setup node
         uses: actions/setup-node@v3
         with:
           node-version: 16
+
       - uses: pnpm/action-setup@v2
         name: Install pnpm
         id: pnpm-install
@@ -34,22 +36,59 @@ jobs:
         if: matrix.platform == 'macos-latest'
         run: rustup target add aarch64-apple-darwin
 
+      - name: Get version with alpha or beta deleted on Windows
+        if: matrix.platform == 'windows-latest'
+        run: |
+          cd src-tauri
+          $version = node before-build.js
+          $package_verion = node -p "require('../package.json').version"
+          echo "BUILD_VERSION=$version" >> $Env:GITHUB_ENV
+          echo "PACKAGE_VERSION=$package_verion" >> $Env:GITHUB_ENV
+
+      - name: Get version
+        if: matrix.platform != 'windows-latest'
+        run: |
+          cd src-tauri
+          version=$(node before-build.js)
+          echo "BUILD_VERSION=$version" >> $GITHUB_ENV
+
       - name: install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
       - name: install frontend dependencies
         run: pnpm i
-      - uses: tauri-apps/tauri-action@v0
+
+      - name: build windows bundles
+        if: matrix.platform == 'windows-latest'
+        uses: up2b/action@v0.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          RENAME_RULE: '{"searchValue": "${{ env.PACKAGE_VERSION }}", "replaceValue": "${{ env.BUILD_VERSION }}"}'
+        with:
+          tagName: ${{ format('v{0}',  env.BUILD_VERSION) }}
+          releaseName: ${{ format('v{0}', env.BUILD_VERSION) }}
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          rename: ${{ env.RENAME_RULE }}
+          prerelease: ${{ contains(env.BUILD_VERSION, 'alpha') }}
+          args: '-t x86_64-pc-windows-msvc'
+
+      - name: build macOS and Linux bundles
+        if: matrix.platform != 'windows-latest'
+        uses: up2b/action@v0.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
-          releaseName: 'UP2B v__VERSION__'
+          releaseName: v__VERSION__
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
-          prerelease: false
-          args: ${{matrix.platform == 'macos-latest' && '-t aarch64-apple-darwin' || matrix.platform == 'windows-latest' && '-t x86_64-pc-windows-msvc' || '-t x86_64-unknown-linux-gnu'}}
+          prerelease: ${{ contains(env.BUILD_VERSION, 'alpha') }}
+          args: ${{matrix.platform == 'macos-latest' && '-t aarch64-apple-darwin' || '-t x86_64-unknown-linux-gnu'}}
