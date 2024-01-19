@@ -8,7 +8,7 @@ const downloadNasm = async () => {
     'https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/win64/nasm-2.16.01-win64.zip',
   )
 
-  if (!fs.existsSync('bin')) await mkdir('bin')
+  if (!fs.existsSync('bin')) fs.mkdirSync('bin')
   const destination = path.resolve('./bin', 'nasm.zip')
   const fileStream = fs.createWriteStream(destination, { flags: 'wx' })
   await finished(Readable.fromWeb(resp.body).pipe(fileStream))
