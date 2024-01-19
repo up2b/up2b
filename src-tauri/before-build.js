@@ -21,7 +21,8 @@ const updateVersion = async () => {
   const { version } = info
 
   if (process.platform !== 'win32') {
-    return version
+    console.log(version)
+    return
   }
 
   if (version.indexOf('-') === -1) {
