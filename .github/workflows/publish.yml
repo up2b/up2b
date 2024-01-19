@@ -46,6 +46,7 @@ jobs:
           echo "PACKAGE_VERSION=$package_verion" >> $Env:GITHUB_ENV
           cd bin
           7z x nasm.zip
+          ls
           echo "$pwd" >> $Env:GITHUB_PATH
 
       - name: Get version
@@ -94,6 +95,7 @@ jobs:
           releaseName: ${{ format('v{0}', env.BUILD_VERSION) }}
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
+          featuresSuffix: true
           rename: ${{ env.RENAME_RULE }}
           prerelease: ${{ contains(env.BUILD_VERSION, 'alpha') }}
           args: '-t x86_64-pc-windows-msvc -f compress'
@@ -125,5 +127,6 @@ jobs:
           releaseName: v__VERSION__
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
+          featuresSuffix: true
           prerelease: ${{ contains(env.BUILD_VERSION, 'alpha') }}
           args: ${{matrix.platform == 'macos-latest' && '-t aarch64-apple-darwin' || '-t x86_64-unknown-linux-gnu'}} -f compress
