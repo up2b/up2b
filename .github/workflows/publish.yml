@@ -46,7 +46,6 @@ jobs:
           echo "PACKAGE_VERSION=$package_verion" >> $Env:GITHUB_ENV
           cd bin
           7z x nasm.zip
-          ls
           echo "$pwd\nasm-2.16.01" >> $Env:GITHUB_PATH
 
       - name: Get version
