@@ -30,11 +30,11 @@
         width: 100%;
         position: relative;
         display: flex;
-      }
 
-      #rc-tabs-1-panel-upload {
-        padding: 20px;
-        flex: 1;
+        &[id$='-panel-upload'] {
+          padding: 20px;
+          flex: 1;
+        }
       }
     }
   }
