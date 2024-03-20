@@ -30,7 +30,7 @@ impl Imgse {
             inner: Chevereto::new(
                 ManagerCode::Imgse,
                 "imgse.com",
-                "https://imgse.com/",
+                "https://imgse.com",
                 username,
                 password,
                 10,
