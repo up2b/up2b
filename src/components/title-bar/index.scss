@@ -1,4 +1,6 @@
 #title-bar {
+  --title-bar-button-color: #fff;
+  --title-bar-button-bg: #dbdbdb;
   --height: 28px;
   height: var(--height);
   position: fixed;
@@ -24,15 +26,21 @@
       cursor: pointer;
 
       &:hover {
-        background-color: #dbdbdb;
+        background-color: var(--title-bar-button-bg);
       }
     }
 
     .close {
       &:hover {
-        color: #fff;
+        color: var(--title-bar-button-color);
         background-color: #dc1616;
       }
     }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  #title-bar {
+    --title-bar-button-bg: #424242;
   }
 }
