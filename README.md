@@ -14,17 +14,15 @@
 
 写此程序的初衷就是觉得作为一个图床管理器，PicGo 的体积太大了，当然，这也是 Electron 程序的通病。
 
-> 请使用 chrome 或 firfox 访问，edge（<121） 无法正常加载下面的动图。
-
 下面是与 PicGo 的体积对比：
 
-|                    | PicGo(2.3.1) | UP2B(0.3.0-alpha.3) |
+|                    | PicGo(2.3.1) | UP2B(0.3.0-alpha.4) |
 | ------------------ | ------------ | ------------------- |
-| Windows x64 exe    | 60.6 MB      | 4.03 MB             |
-| Windows x64 msi    | 不支持       | 4.97 MB             |
-| macOS arm64        | 88.2 MB      | 5.79 MB             |
-| Linux x64 AppImage | 101 MB       | 82 MB               |
-| Linux x64 deb      | 不支持       | 7.53 MB             |
+| Windows x64 exe    | 60.6 MB      | 2.97 MB             |
+| Windows x64 msi    | 不支持       | 3.1 MB              |
+| macOS arm64        | 88.2 MB      | 3.34 MB             |
+| Linux x64 AppImage | 101 MB       | 77.9 MB             |
+| Linux x64 deb      | 不支持       | 2.97 MB             |
 
 ## 2 功能页面
 
