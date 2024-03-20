@@ -204,7 +204,7 @@ impl Chevereto {
 
         let url = self.inner.url("login");
 
-        let resp = self.inner.post(&url, headers).await?;
+        let resp = self.inner.get(&url, headers).await?;
 
         let pattern = r#"PF\.obj\.config\.auth_token = "([a-f0-9]{40})";"#;
         let re = Regex::new(pattern).unwrap();
@@ -296,7 +296,7 @@ impl Chevereto {
     }
 
     async fn login(&mut self) -> Result<Extra> {
-        trace!("log in {}", self.code.name());
+        trace!("loggin in {}", self.code.name());
 
         let (auth_token, cookie) = self.parse_auth_token_and_cookie().await?;
 
@@ -304,6 +304,7 @@ impl Chevereto {
         headers.insert("Cookie", cookie.parse().unwrap());
 
         let url = self.inner.url("login");
+        trace!("log in url: {}", url);
 
         let params = [
             ("login-subject", &self.username),
@@ -369,10 +370,10 @@ impl Chevereto {
 
     fn header(&self) -> HeaderMap {
         let mut header = HeaderMap::new();
-        header.insert("Accept", "application/json".parse().unwrap());
+        // header.insert("Accept", "application/json".parse().unwrap());
         header.insert(
             "User-Agent",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0"
                 .parse()
                 .unwrap(),
         );

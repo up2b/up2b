@@ -11,8 +11,8 @@ const Close = () => (
     fill="currentColor"
   >
     <path
-      fill-rule="evenodd"
-      clip-rule="evenodd"
+      fillRule="evenodd"
+      clipRule="evenodd"
       d="M7.116 8l-4.558 4.558.884.884L8 8.884l4.558 4.558.884-.884L8.884 8l4.558-4.558-.884-.884L8 7.116 3.442 2.558l-.884.884L7.116 8z"
     />
   </svg>
@@ -28,8 +28,8 @@ const Restore = () => (
   >
     <path d="M3 5v9h9V5H3zm8 8H4V6h7v7z" />
     <path
-      fill-rule="evenodd"
-      clip-rule="evenodd"
+      fillRule="evenodd"
+      clipRule="evenodd"
       d="M5 5h1V4h7v7h-1v1h2V3H5v2z"
     />
   </svg>

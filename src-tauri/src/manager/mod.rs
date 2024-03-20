@@ -290,11 +290,11 @@ impl BaseManager {
         Ok(resp)
     }
 
-    async fn post(&self, url: &str, headers: HeaderMap) -> Result<Response> {
-        let resp = self.request(Method::POST, url, headers).send().await?;
-
-        Ok(resp)
-    }
+    // async fn post(&self, url: &str, headers: HeaderMap) -> Result<Response> {
+    //     let resp = self.request(Method::POST, url, headers).send().await?;
+    //
+    //     Ok(resp)
+    // }
 
     /// 不需要获取上传进度时使用此方法发起 json 请求
     async fn json<T: Serialize>(
