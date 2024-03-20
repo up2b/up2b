@@ -30,7 +30,7 @@ impl Imgtg {
             inner: Chevereto::new(
                 ManagerCode::Imgtg,
                 "img.tg",
-                "https://img.tg/",
+                "https://img.tg",
                 username,
                 password,
                 5,

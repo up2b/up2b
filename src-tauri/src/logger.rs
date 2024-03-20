@@ -33,6 +33,7 @@ pub fn logger_config(is_term: bool) -> Config {
         .set_target_level(LevelFilter::Off)
         .add_filter_ignore_str("tao")
         .add_filter_ignore_str("mio")
+        .add_filter_ignore_str("reqwest")
         .build()
 }
 
