@@ -1,19 +1,34 @@
-name: "publish"
+name: "nightly"
 on:
   push:
     branches:
-      - release
+      - main
 
 jobs:
+  check-changed-paths:
+    runs-on: ubuntu-22.04
+    outputs:
+      changed: ${{ steps.changed-front.outputs.changed }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 100
+
+      - uses: marceloprado/has-changed-path@v1.0.1
+        id: changed-front
+        with:
+          paths: public src src-tauri static package.json .scripts .github
+
   create-release:
+    needs: check-changed-paths
+    if: needs.check-changed-paths.outputs.changed == 'true'
     permissions:
       contents: write
     runs-on: ubuntu-22.04
     outputs:
       release_id: ${{ steps.create-release.outputs.result }}
       package_version: ${{ env.PACKAGE_VERSION }}
-      latest_version: ${{ steps.latest-version.outputs.result }}
-      changelog: ${{ steps.github_release_changelog.outputs.changelog }}
 
     steps:
       - uses: actions/checkout@v4
@@ -48,30 +63,29 @@ jobs:
 
             return latesVersion
 
-      - name: build changelog
-        id: github_release_changelog
-        uses: mikepenz/release-changelog-builder-action@v3
-        with:
-          configuration: ".github/changelog-configuration.json"
-          toTag: "refs/heads/main"
-          failOnError: true
+      - name: get old nightly release id
+        run: |
+          release_id=$(curl -s 'https://api.github.com/repos/up2b/up2b/releases/tags/nightly' | awk -F'[{},:]+' '/^  "id"/ {print $2}' | xargs)
+          echo "RELEASE_ID=$release_id"  >> $GITHUB_ENV
+
+      - name: delete old nightly release
+        if: env.RELEASE_ID != ''
+        run: gh release delete nightly --cleanup-tag
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
 
       - name: create release
         id: create-release
         uses: actions/github-script@v7
-        env:
-          changelog: ${{ steps.github_release_changelog.outputs.changelog }}
         with:
           script: |
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: `v${process.env.PACKAGE_VERSION}`,
-              name: `v${process.env.PACKAGE_VERSION}`,
-              body: process.env.changelog,
+              tag_name: "nightly",
+              name: "Nightly build",
               draft: true,
+              prerelease: true,
             })
             return data.id
 
@@ -124,8 +138,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
-          releaseBody: ${{ needs.create-release.outputs.changelog }}
-          updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
 
   publish-release:
@@ -141,88 +153,13 @@ jobs:
         env:
           release_id: ${{ needs.create-release.outputs.release_id }}
           PACKAGE_VERSION: ${{ needs.create-release.outputs.package_version }}
+          LAST_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         with:
           script: |
             github.rest.repos.updateRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              release_id: process.env.release_id,
-              draft: false,
+              release_id: parseInt(process.env.release_id),
+              body: `> [!WARNING]\n> 每夜版可能无法自动升级。/The nightly version may not auto-update.\n\n## Last Commit\n\n${process.env.LAST_COMMIT_MESSAGE}`,
+              draft: false
             })
-
-  upload_mirror_json:
-    permissions:
-      contents: write
-    runs-on: ubuntu-22.04
-    needs: [create-release, publish-release]
-    env:
-      release_id: ${{ needs.create-release.outputs.release_id }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: get latest.json
-        id: get-latest
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const assets = await github.rest.repos.listReleaseAssets({
-              owner: owner,
-              repo: repo,
-              release_id: process.env.release_id,
-              per_page: 50,
-            });
-            const asset = assets.data.find((e) => e.name === 'latest.json');
-
-            if (!asset) throw new Error("latest.json was not found in release assets");
-
-            const data = await github.request(
-              "GET /repos/{owner}/{repo}/releases/assets/{asset_id}",
-              {
-                owner: owner,
-                repo: repo,
-                asset_id: asset.id,
-                headers: {
-                  accept: "application/octet-stream",
-                },
-              },
-            );
-
-            return Buffer.from(data.data).toString()
-
-      - name: new mirror latest.json
-        env:
-          TEXT: ${{ steps.get-latest.outputs.result }}
-        run: |
-          cd .scripts
-          node mirror-latest-json.js
-
-      - uses: wlixcc/SFTP-Deploy-Action@v1.2.4
-        with:
-          username: thepoy
-          server: thepoy.cc
-          password: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          local_path: ./.scripts/mirrors/*
-          remote_path: /home/thepoy/app/up2b
-          sftpArgs: "-o ConnectTimeout=5"
-
-  delete-nightly-release-and-tag:
-    permissions:
-      contents: write
-    runs-on: ubuntu-22.04
-    needs: upload_mirror_json
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: get old nightly release id
-        run: |
-          release_id=$(curl -s 'https://api.github.com/repos/up2b/up2b/releases/tags/nightly' | awk -F'[{},:]+' '/^  "id"/ {print $2}' | xargs)
-          echo "RELEASE_ID=$release_id"  >> $GITHUB_ENV
-
-      - name: delete old nightly release
-        if: env.RELEASE_ID != ''
-        run: gh release delete nightly --cleanup-tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
