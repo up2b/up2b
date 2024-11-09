@@ -1,87 +1,66 @@
 {
-  "build": {
-    "beforeDevCommand": "pnpm dev:vite",
-    "beforeBuildCommand": "pnpm build:vite",
-    "devPath": "http://localhost:1420",
-    "withGlobalTauri": false
-  },
-  "package": {
-    "productName": "up2b",
-    "version": "../package.json"
-  },
-  "tauri": {
-    "cli": {
-      "description": "图床管理客户端",
-      "longDescription": "一个可以管理多个图床的本地客户端，支持命令行调用和图形化配置。",
-      "beforeHelp": "",
-      "afterHelp": "",
-      "args": [],
-      "subcommands": {
-        "upload": {
-          "description": "上传一张或多张图片",
-          "args": [
-            {
-              "name": "images",
-              "description": "图片路径",
-              "index": 1,
-              "minValues": 1,
-              "takesValue": true,
-              "multiple": true,
-              "required": true
-            }
-          ]
-        }
-      }
-    },
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "open": true
-      },
-      "window": {
-        "all": false,
-        "close": true,
-        "hide": true,
-        "show": true,
-        "maximize": true,
-        "minimize": true,
-        "unmaximize": true,
-        "unminimize": true,
-        "setTitle": true,
-        "startDragging": true
-      },
-      "clipboard": {
-        "all": false,
-        "writeText": true
-      }
-    },
-    "bundle": {
-      "active": true,
-      "targets": "all",
-      "identifier": "com.thep0y.up2b",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ]
-    },
-    "security": {
-      "csp": null
-    },
-    "updater": {
-      "active": true,
-      "endpoints": [
-        "https://app.thepoy.cc/up2b/latest-mirror-1.json",
-        "https://app.thepoy.cc/up2b/latest-mirror-2.json",
-        "https://app.thepoy.cc/up2b/latest-mirror-3.json",
-        "https://app.thepoy.cc/up2b/latest-mirror-4.json",
-        "https://github.com/alley-rs/up2b/releases/latest/download/latest.json"
-      ],
-      "dialog": true,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE2NEZBNzNEOEFGRkJBOTUKUldTVnV2K0tQYWRQRnJrbUFrck5qaVRvbXRvbFdVWlVqdTJ2OE94WmJiSFRZZVErZ2JzOTJtZEEK"
-    }
-  }
+	"build": {
+		"beforeDevCommand": "bun run start",
+		"devUrl": "http://localhost:1420",
+		"beforeBuildCommand": "bun run build:vite",
+		"frontendDist": "../dist"
+	},
+	"bundle": {
+		"active": true,
+		"targets": "all",
+		"icon": [
+			"icons/32x32.png",
+			"icons/128x128.png",
+			"icons/128x128@2x.png",
+			"icons/icon.icns",
+			"icons/icon.ico"
+		],
+		"createUpdaterArtifacts": "v1Compatible"
+	},
+	"productName": "up2b",
+	"mainBinaryName": "up2b",
+	"version": "../package.json",
+	"identifier": "com.thep0y.up2b",
+	"plugins": {
+		"cli": {
+			"description": "图床管理客户端",
+			"longDescription": "一个可以管理多个图床的本地客户端，支持命令行调用和图形化配置。",
+			"beforeHelp": "",
+			"afterHelp": "",
+			"args": [],
+			"subcommands": {
+				"upload": {
+					"description": "上传一张或多张图片",
+					"args": [
+						{
+							"name": "images",
+							"description": "图片路径",
+							"index": 1,
+							"minValues": 1,
+							"takesValue": true,
+							"multiple": true,
+							"required": true
+						}
+					]
+				}
+			}
+		},
+		"updater": {
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE2NEZBNzNEOEFGRkJBOTUKUldTVnV2K0tQYWRQRnJrbUFrck5qaVRvbXRvbFdVWlVqdTJ2OE94WmJiSFRZZVErZ2JzOTJtZEEK",
+			"endpoints": [
+				"https://app.thepoy.cc/up2b/latest-mirror-1.json",
+				"https://app.thepoy.cc/up2b/latest-mirror-2.json",
+				"https://app.thepoy.cc/up2b/latest-mirror-3.json",
+				"https://app.thepoy.cc/up2b/latest-mirror-4.json",
+				"https://github.com/alley-rs/up2b/releases/latest/download/latest.json"
+			]
+		}
+	},
+	"app": {
+		"security": {
+			"csp": null
+		},
+		"withGlobalTauri": false
+	}
 }
+

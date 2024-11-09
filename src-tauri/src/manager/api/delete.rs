@@ -2,7 +2,7 @@ use reqwest::{Response, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-use crate::{manager::api::SerdeValueParser, Error, Result};
+use crate::{manager::api::SerdeValueParser, Up2bError, Up2bResult};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", rename_all = "UPPERCASE")]
@@ -42,11 +42,11 @@ pub enum DeleteResponseController {
 }
 
 impl DeleteResponseController {
-    pub(super) async fn parse(&self, response: Response) -> Result<()> {
+    pub(super) async fn parse(&self, response: Response) -> Up2bResult<()> {
         match self {
             DeleteResponseController::Status => {
                 if response.status() != StatusCode::OK {
-                    return Err(Error::Other("unkown".to_owned()));
+                    return Err(Up2bError::Other("unkown".to_owned()));
                 }
             }
             DeleteResponseController::Json {
@@ -59,18 +59,18 @@ impl DeleteResponseController {
                 let value = json.get_value_by_keys(&key);
 
                 if value.is_null() {
-                    return Err(Error::Other("无法获取删除状态值".to_owned()));
+                    return Err(Up2bError::Other("无法获取删除状态值".to_owned()));
                 }
 
                 debug!("删除状态：{}", value);
 
                 if &value != should_be {
                     match message_key {
-                        None => return Err(Error::Other("unkown".to_owned())),
+                        None => return Err(Up2bError::Other("unkown".to_owned())),
                         Some(k) => match json.get(k) {
-                            None => return Err(Error::Other("unkown".to_owned())),
+                            None => return Err(Up2bError::Other("unkown".to_owned())),
                             Some(msg) => {
-                                return Err(Error::Other(msg.as_str().unwrap().to_owned()))
+                                return Err(Up2bError::Other(msg.as_str().unwrap().to_owned()))
                             }
                         },
                     }

@@ -9,9 +9,9 @@ use futures::stream::Stream;
 use read_progress_stream::ReadProgressStream;
 use reqwest::{header::CONTENT_TYPE, RequestBuilder, Response};
 use serde_json::Value;
-use tauri::Window;
+use tauri::{Emitter, WebviewWindow};
 
-use crate::Result;
+use crate::Up2bResult;
 
 use super::ProgressPayload;
 
@@ -55,7 +55,11 @@ impl Stream for BytesStream {
     }
 }
 
-pub async fn bytes_to_body(id: u32, window: Window, bytes: Vec<u8>) -> Result<reqwest::Body> {
+pub async fn bytes_to_body(
+    id: u32,
+    window: WebviewWindow,
+    bytes: Vec<u8>,
+) -> Up2bResult<reqwest::Body> {
     let size = bytes.len();
 
     let window = Mutex::new(window);
@@ -77,10 +81,10 @@ pub async fn bytes_to_body(id: u32, window: Window, bytes: Vec<u8>) -> Result<re
 
 pub async fn upload(
     request_builder: RequestBuilder,
-    window: Option<&Window>,
+    window: Option<&WebviewWindow>,
     body: Value,
     id: u32,
-) -> Result<Response> {
+) -> Up2bResult<Response> {
     let builder = match window {
         None => request_builder.json(&body),
         Some(w) => {

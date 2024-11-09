@@ -4,7 +4,7 @@ use serde_json::{Map, Value};
 
 use crate::{
     manager::{api::SerdeValueParser, ImageItem},
-    Error, Result,
+    Up2bError, Up2bResult,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -54,12 +54,12 @@ impl ListResponseController {
         }
     }
 
-    pub(super) async fn parse(&self, response: Response) -> Result<Vec<ImageItem>> {
+    pub(super) async fn parse(&self, response: Response) -> Up2bResult<Vec<ImageItem>> {
         let json: Value = response.json().await?;
 
         let items = match json.get_value_by_keys(&self.items_key) {
             Value::Array(arr) => arr,
-            _ => return Err(Error::Other("通过 items_key 无法获取列表".to_owned())),
+            _ => return Err(Up2bError::Other("通过 items_key 无法获取列表".to_owned())),
         };
 
         println!("{:?}", items);
@@ -69,11 +69,11 @@ impl ListResponseController {
         for item in items.iter() {
             let url = match item.get_value_by_keys(&self.image_url_key) {
                 Value::String(s) => s,
-                _ => return Err(Error::Other("没有图片链接".to_owned())),
+                _ => return Err(Up2bError::Other("没有图片链接".to_owned())),
             };
             let deleted_id = match item.get_value_by_keys(&self.deleted_id_key) {
                 Value::String(s) => s,
-                _ => return Err(Error::Other("没有删除 id".to_owned())),
+                _ => return Err(Up2bError::Other("没有删除 id".to_owned())),
             };
 
             let image_item = match &self.thumb_key {

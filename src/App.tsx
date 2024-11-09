@@ -1,66 +1,68 @@
-import React, { lazy, useEffect, useState } from 'react'
-import { appWindow } from '@tauri-apps/api/window'
-import { Tabs, Tooltip, message } from 'antd'
+import React, { lazy, useEffect, useState } from "react";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { Tabs, Tooltip, message } from "antd";
 import {
   CloudUploadOutlined,
   UnorderedListOutlined,
   SettingOutlined,
-} from '@ant-design/icons'
-import { suspense } from '~/advance/index'
-import { LazyList, LazyUpload, LazySetting } from '~/lazy'
-import { getConfig } from '~/lib'
-import '~/App.scss'
+} from "@ant-design/icons";
+import { suspense } from "~/advance/index";
+import { LazyList, LazyUpload, LazySetting } from "~/lazy";
+import { getConfig } from "~/lib";
+import "~/App.scss";
+
+const appWindow = getCurrentWebviewWindow();
 
 const TitleBar =
-  import.meta.env.TAURI_PLATFORM === 'windows'
-    ? lazy(() => import('~/components/title-bar'))
-    : null
+  import.meta.env.TAURI_PLATFORM === "windows"
+    ? lazy(() => import("~/components/title-bar"))
+    : null;
 
 const keys: { [K in TabKey]: string } = {
-  list: '图片列表',
-  settings: '设置',
-  upload: '上传',
-}
+  list: "图片列表",
+  settings: "设置",
+  upload: "上传",
+};
 
 const Home = () => {
-  const [messageApi, contextHolder] = message.useMessage()
+  const [messageApi, contextHolder] = message.useMessage();
 
-  const [config, setConfig] = useState<Config | null>(null)
+  const [config, setConfig] = useState<Config | null>(null);
 
-  const [activeKey, setActiveKey] = useState<TabKey>('upload')
+  const [activeKey, setActiveKey] = useState<TabKey>("upload");
 
   useEffect(() => {
-    if (config) return
+    if (config) return;
 
     getConfig().then((c) => {
       if (!c) {
-        setActiveKey('settings')
-        messageApi.warning('配置文件不存在，请先选择并配置一个图床')
+        setActiveKey("settings");
+        messageApi.warning("配置文件不存在，请先选择并配置一个图床");
       } else {
-        setConfig(c)
+        setConfig(c);
       }
-    })
-  }, [])
+    });
+  }, []);
 
   useEffect(() => {
-    if (!activeKey) return
+    if (!activeKey) return;
 
-    appWindow.setTitle(keys[activeKey])
-  }, [activeKey])
+    appWindow.setTitle(keys[activeKey]);
+  }, [activeKey]);
 
   const disabled =
     !config ||
     !config.auth_config ||
     !config.auth_config[config.using] ||
-    (config.auth_config[config.using]!.type === 'API'
+    (config.auth_config[config.using]!.type === "API"
       ? !(config!.auth_config[config!.using]! as ApiAuthConfig).token
-      : (config.auth_config[config!.using]! as GitAuthConfig).type === 'GIT'
+      : (config.auth_config[config!.using]! as GitAuthConfig).type === "GIT"
         ? !(config.auth_config[config.using] as GitAuthConfig).token ||
         !(config.auth_config[config.using] as GitAuthConfig).username ||
         !(config.auth_config[config.using] as GitAuthConfig).repository
         : !(config.auth_config[config.using]! as CheveretoAuthConfig)
           .username ||
-        !(config.auth_config[config.using]! as CheveretoAuthConfig).password)
+        !(config.auth_config[config.using]! as CheveretoAuthConfig).password);
 
   const tabs = [
     {
@@ -69,7 +71,7 @@ const Home = () => {
           <CloudUploadOutlined />
         </Tooltip>
       ),
-      key: 'upload',
+      key: "upload",
       disabled,
       children: suspense(<LazyUpload />),
       destroyInactiveTabPane: true,
@@ -80,7 +82,7 @@ const Home = () => {
           <UnorderedListOutlined />
         </Tooltip>
       ),
-      key: 'list',
+      key: "list",
       disabled,
       children: suspense(<LazyList />),
       destroyInactiveTabPane: true,
@@ -91,10 +93,10 @@ const Home = () => {
           <SettingOutlined />
         </Tooltip>
       ),
-      key: 'settings',
+      key: "settings",
       children: suspense(<LazySetting config={config} setConfig={setConfig} />),
     },
-  ]
+  ];
 
   return (
     <>
@@ -102,8 +104,8 @@ const Home = () => {
         data-tauri-drag-region
         style={{
           height: 28,
-          position: 'fixed',
-          width: '100%',
+          position: "fixed",
+          width: "100%",
           zIndex: 9999999,
         }}
       >
@@ -123,7 +125,7 @@ const Home = () => {
 
       {contextHolder}
     </>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

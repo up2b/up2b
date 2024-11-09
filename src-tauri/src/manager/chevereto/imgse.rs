@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use async_trait::async_trait;
-use tauri::Window;
+use tauri::WebviewWindow;
 
 use crate::http::multipart::FileKind;
 use crate::manager::{
     AllowedImageFormat, DeleteResponse, Extra, ImageItem, Manage, ManagerCode, UploadResult,
 };
-use crate::Result;
+use crate::Up2bResult;
 
 use super::Chevereto;
 #[cfg(feature = "compress")]
@@ -59,23 +59,23 @@ impl Manage for Imgse {
         self.inner.file_kind == FileKind::Stream
     }
 
-    async fn verify(&self) -> Result<Option<Extra>> {
+    async fn verify(&self) -> Up2bResult<Option<Extra>> {
         let mut inner = self.inner.clone();
         Ok(Some(inner.login().await?))
     }
 
-    async fn get_all_images(&self) -> Result<Vec<ImageItem>> {
+    async fn get_all_images(&self) -> Up2bResult<Vec<ImageItem>> {
         self.inner.get_user_images().await
     }
 
-    async fn delete_image(&self, id: &str) -> Result<DeleteResponse> {
+    async fn delete_image(&self, id: &str) -> Up2bResult<DeleteResponse> {
         let mut inner = self.inner.clone();
         inner.delete_image_by_id(id, 0).await
     }
 
     async fn upload_image(
         &self,
-        window: Option<Window>,
+        window: Option<WebviewWindow>,
         id: u32,
         image_path: &Path,
     ) -> UploadResult {

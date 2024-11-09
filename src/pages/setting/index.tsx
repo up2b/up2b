@@ -20,7 +20,7 @@ import {
 } from '~/lib'
 import ProxySetting from './proxy'
 import './index.scss'
-import { open } from '@tauri-apps/api/shell'
+import { open } from '@tauri-apps/plugin-shell'
 import { PlusOutlined } from '@ant-design/icons'
 import AddCustom from './components/add.tsx'
 import ApiSettingForm from './components/api/form.tsx'

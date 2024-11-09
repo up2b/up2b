@@ -7,15 +7,15 @@ use async_recursion::async_recursion;
 use regex::Regex;
 use reqwest::{header::HeaderMap, Method, StatusCode};
 use serde::{Deserialize, Serialize};
-use tauri::Window;
+use tauri::WebviewWindow;
 
 use crate::{
     config::{write_config, ManagerAuthConfigKind, CONFIG},
-    error::{CheveretoError, Result},
+    error::{CheveretoError, Up2bResult},
     http::multipart::FileKind,
     manager::DeleteError,
     util::time::now,
-    Error,
+    Up2bError,
 };
 
 #[cfg(feature = "compress")]
@@ -191,7 +191,7 @@ impl Chevereto {
         }
     }
 
-    async fn get_auth_data(&self, no_cookie: bool) -> Result<Option<(String, HeaderMap)>> {
+    async fn get_auth_data(&self, no_cookie: bool) -> Up2bResult<Option<(String, HeaderMap)>> {
         trace!("get auth data");
 
         let mut headers = self.header();
@@ -219,7 +219,7 @@ impl Chevereto {
 
         if status != StatusCode::OK {
             error!("could not get the auth data: status = {}", status);
-            return Err(Error::Status(status));
+            return Err(Up2bError::Status(status));
         }
 
         debug!("got the response of auth data");
@@ -229,7 +229,7 @@ impl Chevereto {
         if let Some(captures) = re.captures(&html) {
             let auth_token = match captures.get(1) {
                 Some(t) => t.as_str(),
-                None => return Err(Error::Other("解析 auth_token 失败".to_owned())),
+                None => return Err(Up2bError::Other("解析 auth_token 失败".to_owned())),
             };
 
             debug!("got a new auth data: {}", auth_token);
@@ -242,13 +242,13 @@ impl Chevereto {
         Ok(None)
     }
 
-    async fn update_auth_token(&mut self) -> Result<()> {
+    async fn update_auth_token(&mut self) -> Up2bResult<()> {
         trace!("updating auth_token");
 
         let data = self.get_auth_data(false).await?;
 
         match data {
-            None => Err(Error::Other("自动更新认证信息失败".to_owned())),
+            None => Err(Up2bError::Other("自动更新认证信息失败".to_owned())),
             Some((s, _)) => {
                 self.token = Some(s.clone());
 
@@ -273,19 +273,23 @@ impl Chevereto {
         }
     }
 
-    async fn parse_auth_token_and_cookie(&self) -> Result<(String, String)> {
+    async fn parse_auth_token_and_cookie(&self) -> Up2bResult<(String, String)> {
         trace!("parsing auth token and cookie");
 
         let data = self.get_auth_data(true).await?;
         match data {
-            None => Err(Error::Other("解析 auth_token 和 cookie 失败".to_owned())),
+            None => Err(Up2bError::Other(
+                "解析 auth_token 和 cookie 失败".to_owned(),
+            )),
             Some((s, headers)) => {
                 let cookies = match headers.get("Set-Cookie") {
                     Some(c) => c,
-                    None => return Err(Error::Other("解析 cookies 失败".to_owned())),
+                    None => return Err(Up2bError::Other("解析 cookies 失败".to_owned())),
                 };
 
-                let cookies_str = cookies.to_str().map_err(|e| Error::Other(e.to_string()))?;
+                let cookies_str = cookies
+                    .to_str()
+                    .map_err(|e| Up2bError::Other(e.to_string()))?;
                 let cookie = cookies_str.split(';').collect::<Vec<&str>>()[0];
 
                 info!("got auth data, token = {}, cookie = {}", s, cookie);
@@ -295,7 +299,7 @@ impl Chevereto {
         }
     }
 
-    async fn login(&mut self) -> Result<Extra> {
+    async fn login(&mut self) -> Up2bResult<Extra> {
         trace!("loggin in {}", self.code.name());
 
         let (auth_token, cookie) = self.parse_auth_token_and_cookie().await?;
@@ -339,20 +343,22 @@ impl Chevereto {
                 let error_detail = captures.get(1).unwrap().as_str();
 
                 if error_detail == "错误的用户名或密码" {
-                    return Err(Error::Auth);
+                    return Err(Up2bError::Auth);
                 } else {
-                    return Err(Error::Other(error_detail.to_owned()));
+                    return Err(Up2bError::Other(error_detail.to_owned()));
                 }
             }
 
-            return Err(Error::Status(status));
+            return Err(Up2bError::Status(status));
         }
 
         let cookies = match resp.headers().get("Set-Cookie") {
             Some(c) => c,
-            None => return Err(Error::Other("cookies 为空".to_owned())),
+            None => return Err(Up2bError::Other("cookies 为空".to_owned())),
         };
-        let cookies_str = cookies.to_str().map_err(|e| Error::Other(e.to_string()))?;
+        let cookies_str = cookies
+            .to_str()
+            .map_err(|e| Up2bError::Other(e.to_string()))?;
         let keeplogin: &str = cookies_str.split(';').collect::<Vec<&str>>()[0];
 
         let cookie = format!("{}; {}", cookie, keeplogin);
@@ -391,7 +397,7 @@ impl Chevereto {
         page: u8,
         seek: Option<String>,
         images: &mut Vec<ImageItem>,
-    ) -> Result<()> {
+    ) -> Up2bResult<()> {
         debug!("requesting ablum: page={}", page);
 
         let url = match seek {
@@ -412,7 +418,7 @@ impl Chevereto {
 
         if status != StatusCode::OK {
             error!("got images list failed: status={}", status);
-            return Err(Error::Status(status));
+            return Err(Up2bError::Status(status));
         }
 
         let text = resp.text().await?;
@@ -460,7 +466,7 @@ impl Chevereto {
         Ok(())
     }
 
-    async fn get_user_images(&self) -> Result<Vec<ImageItem>> {
+    async fn get_user_images(&self) -> Up2bResult<Vec<ImageItem>> {
         trace!("getting images");
 
         let mut images = vec![];
@@ -473,7 +479,11 @@ impl Chevereto {
     }
 
     #[async_recursion]
-    async fn delete_image_by_id(&mut self, id: &str, retry_counter: u8) -> Result<DeleteResponse> {
+    async fn delete_image_by_id(
+        &mut self,
+        id: &str,
+        retry_counter: u8,
+    ) -> Up2bResult<DeleteResponse> {
         trace!("deleting an image");
 
         let url = self.inner.url("json");
@@ -546,11 +556,11 @@ impl Chevereto {
     #[async_recursion]
     async fn upload(
         &mut self,
-        window: Option<Window>,
+        window: Option<WebviewWindow>,
         id: u32,
         image_path: &Path,
         retry_counter: u8,
-    ) -> Result<CheveretoUploadResponse> {
+    ) -> Up2bResult<CheveretoUploadResponse> {
         trace!("uploading: {:?}", image_path);
 
         if self.token.is_none() || self.cookie.is_none() {
@@ -600,7 +610,7 @@ impl Chevereto {
                 Ok(e) => e,
                 Err(e) => {
                     error!("反序列化时出错：{}", e);
-                    return Err(Error::Reqeust(e));
+                    return Err(Up2bError::Reqeust(e));
                 }
             };
             debug!("请求错误，响应体：{error_response:?}");
@@ -611,12 +621,12 @@ impl Chevereto {
                 CheveretoError::AuthToken => {}
                 _ => {
                     error!("uploaded failed: {}", error);
-                    return Err(Error::Chevereto(error));
+                    return Err(Up2bError::Chevereto(error));
                 }
             }
 
             if retry_counter == MAX_RETRY_COUNT {
-                return Err(Error::Chevereto(error));
+                return Err(Up2bError::Chevereto(error));
             }
 
             info!("upload failed due to an invalid auth token. Will update the auth token and retry: {}/{}", retry_counter, MAX_RETRY_COUNT);
@@ -633,7 +643,7 @@ impl Chevereto {
             }
             Err(e) => {
                 error!("反序例化时出错：{}", e);
-                Err(Error::Reqeust(e))
+                Err(Up2bError::Reqeust(e))
             }
         }
     }

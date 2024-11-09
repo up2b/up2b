@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { appWindow } from '@tauri-apps/api/window'
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import './index.scss'
+const appWindow = getCurrentWebviewWindow()
 
 const Close = () => (
   <svg

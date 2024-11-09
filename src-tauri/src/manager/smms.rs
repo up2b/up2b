@@ -2,9 +2,9 @@ use std::path::Path;
 
 use async_trait::async_trait;
 use serde_json::Value;
-use tauri::Window;
+use tauri::WebviewWindow;
 
-use crate::Result;
+use crate::Up2bResult;
 use crate::{http::multipart::FileKind, manager::api::UploadResponseStatus};
 
 use super::api::{
@@ -109,16 +109,16 @@ impl Manage for SmMs {
         true
     }
 
-    async fn verify(&self) -> Result<Option<Extra>> {
+    async fn verify(&self) -> Up2bResult<Option<Extra>> {
         // TODO: api 类型的图床的 token 验证以后再实现
         Ok(None)
     }
 
-    async fn get_all_images(&self) -> Result<Vec<ImageItem>> {
+    async fn get_all_images(&self) -> Up2bResult<Vec<ImageItem>> {
         self.inner.list().await
     }
 
-    async fn delete_image(&self, id: &str) -> Result<DeleteResponse> {
+    async fn delete_image(&self, id: &str) -> Up2bResult<DeleteResponse> {
         match self.inner.delete(id).await {
             Ok(()) => Ok(DeleteResponse {
                 success: true,
@@ -133,7 +133,7 @@ impl Manage for SmMs {
 
     async fn upload_image(
         &self,
-        window: Option<Window>,
+        window: Option<WebviewWindow>,
         id: u32,
         image_path: &Path,
     ) -> UploadResult {

@@ -9,18 +9,18 @@ use reqwest::{header::HeaderMap, Client, Method, RequestBuilder, Response};
 use serde::{de::Visitor, Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display, path::Path, time::Duration};
-use tauri::Window;
+use tauri::WebviewWindow;
 use tokio::fs::{read, File};
 
 use crate::{
     config::ManagerAuthConfigKind,
-    error::{ConfigError, Error},
+    error::{ConfigError, Up2bError},
     http::{
         json,
         multipart::{self, FileKind, UploadFile},
     },
     util::image::guess_mime_type_by_ext,
-    Result,
+    Up2bResult,
 };
 #[cfg(feature = "compress")]
 use {crate::config::CONFIG, crate::util::image::compress::compress};
@@ -68,7 +68,7 @@ pub struct DeleteResponse {
 #[serde(tag = "type")]
 pub enum UploadResult {
     Response(ImageItem),
-    Error { detail: Error, code: String },
+    Error { detail: Up2bError, code: String },
 }
 
 pub type Extra = HashMap<String, String>;
@@ -78,12 +78,12 @@ pub trait Manage: Sync + Send {
     fn allowed_formats(&self) -> Vec<AllowedImageFormat>;
     /// 上传时是否使用流，只有流式上传时前端才使用进度条
     fn support_stream(&self) -> bool;
-    async fn verify(&self) -> Result<Option<Extra>>;
-    async fn get_all_images(&self) -> Result<Vec<ImageItem>>;
-    async fn delete_image(&self, id: &str) -> Result<DeleteResponse>;
+    async fn verify(&self) -> Up2bResult<Option<Extra>>;
+    async fn get_all_images(&self) -> Up2bResult<Vec<ImageItem>>;
+    async fn delete_image(&self, id: &str) -> Up2bResult<DeleteResponse>;
     async fn upload_image(
         &self,
-        window: Option<Window>, // 命令行上传图片时不传入此参数
+        window: Option<WebviewWindow>, // 命令行上传图片时不传入此参数
         id: u32,
         image_path: &Path,
     ) -> UploadResult;
@@ -110,14 +110,14 @@ pub enum CompressedFormat {
 pub fn use_manager(
     using: &ManagerCode,
     auth_config: &ManagerAuthConfigKind,
-) -> Result<Box<dyn Manage>> {
+) -> Up2bResult<Box<dyn Manage>> {
     let uploader: Box<dyn Manage> = match using {
         ManagerCode::Smms => match auth_config {
             ManagerAuthConfigKind::API { token, .. } => {
                 let manager = SmMs::new(token.to_string());
                 Box::new(manager)
             }
-            _ => return Err(Error::Config(ConfigError::Type(using.name()))),
+            _ => return Err(Up2bError::Config(ConfigError::Type(using.name()))),
         },
         ManagerCode::Imgse => match auth_config {
             ManagerAuthConfigKind::Chevereto {
@@ -203,7 +203,7 @@ async fn is_exceeded(
     image_path: &Path,
     max_size: u64,
     file_size: u64,
-) -> Result<()> {
+) -> Up2bResult<()> {
     if max_size >= file_size {
         return Ok(());
     }
@@ -212,7 +212,7 @@ async fn is_exceeded(
         "image size exceeds the maximum limit: {} > {}",
         file_size, max_size
     );
-    return Err(Error::OverSize(
+    return Err(Up2bError::OverSize(
         image_bed_name.to_string(),
         image_path.to_string_lossy().to_string(),
         max_size / 1024 / 1024,
@@ -277,14 +277,14 @@ impl BaseManager {
         self.base_url.to_owned() + path
     }
 
-    async fn get(&self, url: &str, headers: HeaderMap) -> Result<Response> {
+    async fn get(&self, url: &str, headers: HeaderMap) -> Up2bResult<Response> {
         trace!("发起 GET 请求：url={}, headers={:?}", url, headers);
         let resp = self.request(Method::GET, url, headers).send().await?;
 
         Ok(resp)
     }
 
-    async fn delete(&self, url: &str, headers: HeaderMap) -> Result<Response> {
+    async fn delete(&self, url: &str, headers: HeaderMap) -> Up2bResult<Response> {
         let resp = self.request(Method::DELETE, url, headers).send().await?;
 
         Ok(resp)
@@ -303,7 +303,7 @@ impl BaseManager {
         url: &str,
         headers: HeaderMap,
         body: T,
-    ) -> Result<Response> {
+    ) -> Up2bResult<Response> {
         let resp = self
             .request(method.as_method(), url, headers)
             .json(&body)
@@ -326,7 +326,7 @@ impl BaseManager {
         file: File,
         image_path: &Path,
         #[cfg(feature = "compress")] filename: &str,
-    ) -> Result<File> {
+    ) -> Up2bResult<File> {
         let file_size = file.metadata().await?.len();
 
         let max_size = u64::from(self.max_size) * 1024 * 1024;
@@ -357,7 +357,7 @@ impl BaseManager {
 
     async fn upload_json<T: Serialize>(
         &self,
-        window: Option<Window>,
+        window: Option<WebviewWindow>,
         method: RequestWithBodyMethod,
         id: u32,
         url: &str,
@@ -365,7 +365,7 @@ impl BaseManager {
         key: &str,
         image_path: &Path,
         form: Option<T>,
-    ) -> Result<Response> {
+    ) -> Up2bResult<Response> {
         // TODO: base64 上传对体积的限制待处理
         let file_data = read(image_path).await?;
         let file_data = general_purpose::STANDARD.encode(file_data);
@@ -386,7 +386,7 @@ impl BaseManager {
 
                 body = Value::Object(map);
             }
-            _ => return Err(Error::Other("错误的类型".to_owned())),
+            _ => return Err(Up2bError::Other("错误的类型".to_owned())),
         };
 
         let builder = self.request(method.as_method(), url, header);
@@ -398,7 +398,7 @@ impl BaseManager {
 
     async fn upload_multipart(
         &self,
-        window: Option<Window>,
+        window: Option<WebviewWindow>,
         id: u32,
         url: &str,
         header: HeaderMap,
@@ -406,7 +406,7 @@ impl BaseManager {
         file_part_name: &str,
         file_kind: &FileKind,
         form: Option<&[(&str, &str)]>,
-    ) -> Result<Response> {
+    ) -> Up2bResult<Response> {
         let file = File::open(&image_path).await?;
         let filename = image_path.file_name().unwrap().to_str().unwrap();
 

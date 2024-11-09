@@ -10,34 +10,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1", features = [] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "1", features = [ "updater",
-  "window-set-title",
-  "window-unminimize",
-  "window-start-dragging",
-  "window-maximize",
-  "window-minimize",
-  "window-close",
-  "window-hide",
-  "window-show",
-  "window-unmaximize",
-  "cli",
-  "clipboard-write-text",
-  "shell-open",
-] }
+tauri = { version = "2", features = [] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-reqwest = { version = "0.11", features = [
-  "json",
-  "socks",
-  "stream",
-  "multipart",
-] }
+reqwest = { version = "0", features = ["json", "socks", "stream", "multipart"] }
 async-trait = "0.1"
-window-shadows = { git = "https://github.com/tauri-apps/window-shadows" }
 log = "0.4"
 simplelog = { version = "0.12" }
 time = { version = "0.3", features = ['formatting'] }
@@ -47,13 +28,17 @@ dirs = "5"
 tokio-util = "0.7"
 read-progress-stream = "1"
 futures-util = "0.3"
-thiserror = "1"
+thiserror = "2"
 image = { version = "0.25", features = ['webp', 'avif'], optional = true }
 regex = "1"
 async-recursion = "1"
 base64 = "0.22"
 futures = "0.3"
 bytes = "1.5"
+
+tauri-plugin-shell = "2"
+tauri-plugin-clipboard-manager = "2.0.2"
+tauri-plugin-cli = "2"
 
 [dev-dependencies]
 env_logger = "0.11"
@@ -62,13 +47,13 @@ env_logger = "0.11"
 compress = ["dep:image"]
 # 默认情况下图片解码时的内存占用控制在 512M 以内，no-limits 则无限制，可能导致内存溢出
 no-limits = ["compress"]
-# this feature is used for production builds or when `devPath` points to the filesystem
-# DO NOT REMOVE!!
-custom-protocol = ["tauri/custom-protocol"]
 
 [profile.release]
-panic = "abort"   # Strip expensive panic clean-up logic
-codegen-units = 1 # Compile crates one after another so the compiler can optimize better
-lto = true        # Enables link to optimizations
-opt-level = "s"   # Optimize for binary size
-strip = true      # Remove debug symbols
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
