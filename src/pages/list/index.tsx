@@ -1,92 +1,92 @@
-import React, { useEffect, useState } from 'react'
-import { message, Flex, Spin, FloatButton, Empty } from 'antd'
-import { SyncOutlined } from '@ant-design/icons'
+import React, { useEffect, useState } from "react";
+import { message, Flex, Spin, FloatButton, Empty } from "antd";
+import { SyncOutlined } from "@ant-design/icons";
 import {
   setStorage,
   getConfig,
   getAllImages,
   getImagesInStorage,
   getUsingImageBed,
-} from '~/lib'
-import './index.scss'
-import { LazyImageCard } from '~/lazy'
-import { suspense } from '~/advance'
+} from "~/lib";
+import "./index.scss";
+import { LazyImageCard } from "~/lazy";
+import { suspense } from "~/advance";
 
 const ImageList = () => {
-  const [messageApi, contextHolder] = message.useMessage()
+  const [messageApi, contextHolder] = message.useMessage();
 
-  const [imageBedCode, setImageBedCode] = useState<ManagerCode | null>(null)
+  const [imageBedCode, setImageBedCode] = useState<ManagerCode | null>(null);
 
-  const [images, setImages] = useState<ImageResponseItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [images, setImages] = useState<ImageResponseItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (imageBedCode) return
+    if (imageBedCode) return;
 
     getUsingImageBed()
       .then((c) => setImageBedCode(c))
-      .finally(() => setLoading(false))
-  }, [])
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
-    if (!imageBedCode) return
+    if (!imageBedCode) return;
 
-    const cached = getImagesInStorage(imageBedCode)
+    const cached = getImagesInStorage(imageBedCode);
 
-    if (!cached?.length) updateImageList()
-    else setImages(cached)
-  }, [imageBedCode])
+    if (!cached?.length) updateImageList();
+    else setImages(cached);
+  }, [imageBedCode]);
 
   useEffect(() => {
-    if (!imageBedCode || images.length === 0) return
+    if (!imageBedCode || images.length === 0) return;
 
-    setStorage(imageBedCode, images)
-  }, [images, imageBedCode])
+    setStorage(imageBedCode, images);
+  }, [images, imageBedCode]);
 
   const updateImageList = async () => {
-    const config = await getConfig()
+    const config = await getConfig();
     if (!config) {
-      messageApi.error('配置为空')
-      return
+      messageApi.error("配置为空");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      const list = await getAllImages()
+      const list = await getAllImages();
 
-      list.reverse()
+      list.reverse();
 
-      setLoading(false)
+      setLoading(false);
 
-      setStorage(imageBedCode!, list)
+      setStorage(imageBedCode!, list);
 
-      setImages(list)
+      setImages(list);
     } catch (e) {
-      let error = String(e)
-      if (error === '资源不存在') {
+      const error = String(e);
+      if (error === "资源不存在") {
         // 只有 github 有这个错误信息
-        setLoading(false)
-        message.warning('目录为空，请先上传一张图片')
+        setLoading(false);
+        message.warning("目录为空，请先上传一张图片");
       }
     }
-  }
+  };
 
   const afterDeleting = (url: string) => {
     setImages((pre) => {
-      const newImages = pre.filter((v) => v.url !== url)
+      const newImages = pre.filter((v) => v.url !== url);
 
-      setStorage(imageBedCode!, newImages)
+      setStorage(imageBedCode!, newImages);
 
-      return newImages
-    })
-  }
+      return newImages;
+    });
+  };
 
   return (
     <Spin spinning={loading} className="loading-list">
       <div
         id="image-list"
-        className={images.length ? undefined : 'image-list__empty'}
+        className={images.length ? undefined : "image-list__empty"}
       >
         {contextHolder}
 
@@ -101,7 +101,7 @@ const ImageList = () => {
                     url={item.url}
                     thumb={item.thumb}
                     status={{
-                      type: 'success',
+                      type: "success",
                       deleteId: item.deleted_id,
                       afterDeleting: afterDeleting,
                     }}
@@ -120,7 +120,7 @@ const ImageList = () => {
         />
       </div>
     </Spin>
-  )
-}
+  );
+};
 
-export default ImageList
+export default ImageList;

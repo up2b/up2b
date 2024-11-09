@@ -14,7 +14,7 @@ import "~/App.scss";
 const appWindow = getCurrentWebviewWindow();
 
 const TitleBar =
-  import.meta.env.TAURI_PLATFORM === "windows"
+  import.meta.env.TAURI_ENV_PLATFORM === "windows"
     ? lazy(() => import("~/components/title-bar"))
     : null;
 
