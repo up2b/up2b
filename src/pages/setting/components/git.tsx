@@ -1,24 +1,24 @@
-import React from 'react'
-import { Divider, Form, Space, Button, Input, FormRule } from 'antd'
-import { areObjectsEqual, clearStorage, updateConfig } from '~/lib'
-import { cleanConfig } from '..'
-import type { MessageInstance } from 'antd/es/message/interface'
+import React, { useEffect } from "react";
+import { Divider, Form, Space, Button, Input, FormRule } from "antd";
+import { areObjectsEqual, clearStorage, updateConfig } from "~/lib";
+import { cleanConfig } from "..";
+import type { MessageInstance } from "antd/es/message/interface";
 
-const initForm: Omit<GitAuthConfig, 'type'> = {
-  base_url: 'https://api.github.com/repos/',
-  token: '',
-  username: '',
-  repository: '',
-  path: 'up2b',
-}
+const initForm: Omit<GitAuthConfig, "type"> = {
+  base_url: "https://api.github.com/repos/",
+  token: "",
+  username: "",
+  repository: "",
+  path: "up2b",
+};
 
 interface GitSettingProps {
-  config: Config
-  defaultConfig: Config
-  setConfig: React.Dispatch<React.SetStateAction<Config | null>>
-  setDefaultConfig: React.Dispatch<React.SetStateAction<Config | null>>
-  managerKey: GitManagerKey
-  message: MessageInstance
+  config: Config;
+  defaultConfig: Config;
+  setConfig: React.Dispatch<React.SetStateAction<Config | null>>;
+  setDefaultConfig: React.Dispatch<React.SetStateAction<Config | null>>;
+  managerKey: GitManagerKey;
+  message: MessageInstance;
 }
 
 const GitSetting = ({
@@ -29,9 +29,9 @@ const GitSetting = ({
   managerKey,
   message,
 }: GitSettingProps) => {
-  const [form] = Form.useForm()
+  const [form] = Form.useForm();
 
-  const rules: FormRule[] = [{ required: true }]
+  const rules: FormRule[] = [{ required: true }];
 
   return (
     <Form
@@ -42,31 +42,31 @@ const GitSetting = ({
           ...config!,
           auth_config: {
             ...config.auth_config,
-            [managerKey]: { ...values, type: 'GIT' },
+            [managerKey]: { ...values, type: "GIT" },
           },
-        }
+        };
 
-        cleanConfig(newConfig)
+        cleanConfig(newConfig);
 
         try {
-          await updateConfig(newConfig)
-          setDefaultConfig(config)
-          setConfig(newConfig)
+          await updateConfig(newConfig);
+          setDefaultConfig(config);
+          setConfig(newConfig);
 
-          clearStorage(managerKey)
+          clearStorage(managerKey);
 
-          message.success('已保存 ' + managerKey + ' 配置')
+          message.success("已保存 " + managerKey + " 配置");
         } catch (e) {
-          message.error(String(e))
+          message.error(String(e));
         }
       }}
     >
       <Form.Item
         name="base_url"
         label="接口"
-        rules={[...rules, { type: 'url', warningOnly: true }]}
+        rules={[...rules, { type: "url", warningOnly: true }]}
       >
-        <Input disabled={managerKey === 'GITHUB'} />
+        <Input disabled={managerKey === "GITHUB"} />
       </Form.Item>
 
       <Space wrap>
@@ -90,9 +90,9 @@ const GitSetting = ({
 
       <Form.Item
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
         <Space>
@@ -108,7 +108,7 @@ const GitSetting = ({
         </Space>
       </Form.Item>
     </Form>
-  )
-}
+  );
+};
 
-export default GitSetting
+export default GitSetting;
