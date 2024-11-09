@@ -12,7 +12,7 @@ fn new_window(app: &App) {
         #[cfg(debug_assertions)]
         WebviewUrl::External("http://localhost:1420".parse().unwrap()),
         #[cfg(not(debug_assertions))]
-        WindowUrl::App("../dist".into()),
+        WebviewUrl::App("../dist".into()),
     )
     .decorations(cfg!(not(target_os = "windows")))
     .title("up2b")
