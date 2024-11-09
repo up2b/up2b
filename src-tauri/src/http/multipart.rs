@@ -4,19 +4,19 @@ use futures_util::TryStreamExt;
 use read_progress_stream::ReadProgressStream;
 use reqwest::{multipart::Part, RequestBuilder, Response};
 use serde::{Deserialize, Serialize};
-use tauri::Window;
+use tauri::{Emitter, WebviewWindow};
 use tokio::{fs::File, io::AsyncReadExt};
 use tokio_util::codec::{BytesCodec, FramedRead};
 
-use crate::Result;
+use crate::Up2bResult;
 
 use super::ProgressPayload;
 
 pub async fn file_to_body(
     id: u32,
-    window: Arc<Mutex<Window>>,
+    window: Arc<Mutex<WebviewWindow>>,
     file: File,
-) -> Result<reqwest::Body> {
+) -> Up2bResult<reqwest::Body> {
     let file_size = file.metadata().await?.len();
     let stream = FramedRead::new(file, BytesCodec::new()).map_ok(|r| r.freeze());
 
@@ -55,14 +55,14 @@ impl<'r> UploadFile<'r> {
 
 pub async fn upload(
     request_builder: RequestBuilder,
-    window: Option<&Window>,
+    window: Option<&WebviewWindow>,
     id: u32,
     part_name: &str,
     filename: &str,
     mut upload_file: UploadFile<'_>,
     mime_type: &str,
     texts: Option<&[(&str, &str)]>,
-) -> Result<Response> {
+) -> Up2bResult<Response> {
     let file_part = match &window {
         None => Part::stream(upload_file.file),
         Some(w) => match upload_file.kind {

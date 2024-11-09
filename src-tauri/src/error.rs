@@ -4,7 +4,7 @@ use serde::{Serialize, Serializer};
 
 use crate::manager::ManagerCode;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Up2bResult<T> = std::result::Result<T, Up2bError>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
@@ -17,7 +17,9 @@ pub enum ConfigError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
+pub enum Up2bError {
+    #[error(transparent)]
+    Cli(#[from] tauri_plugin_cli::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
@@ -84,7 +86,7 @@ pub enum Error {
     Git(#[from] GitError),
 }
 
-impl Error {
+impl Up2bError {
     pub fn as_string(&self) -> String {
         match self {
             Self::OverSize(_, _, _, _) => "OVER_SIZE".to_owned(),
@@ -98,7 +100,7 @@ impl Error {
     }
 }
 
-impl Serialize for Error {
+impl Serialize for Up2bError {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,

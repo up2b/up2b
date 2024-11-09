@@ -6,7 +6,7 @@ use reqwest::{
     Method, StatusCode,
 };
 use serde_json::Value;
-use tauri::Window;
+use tauri::WebviewWindow;
 
 #[cfg(feature = "compress")]
 use super::CompressedFormat;
@@ -19,7 +19,7 @@ use crate::{
     error::{GitError, HeaderError, PathError, UploadError},
     manager::DeleteError,
     util::time::now,
-    Error, Result,
+    Up2bError, Up2bResult,
 };
 
 #[derive(Debug)]
@@ -77,7 +77,7 @@ impl GitManager {
         &self.inner.allowed_formats
     }
 
-    fn headers(&self) -> Result<HeaderMap> {
+    fn headers(&self) -> Up2bResult<HeaderMap> {
         let mut headers = HeaderMap::new();
         match &self.headers {
             None => {
@@ -113,7 +113,7 @@ impl GitManager {
         Ok(headers)
     }
 
-    fn parse_images(&self, items: &[Value]) -> Result<Vec<ImageItem>> {
+    fn parse_images(&self, items: &[Value]) -> Up2bResult<Vec<ImageItem>> {
         let mut image_items = Vec::with_capacity(items.len());
 
         for item in items.iter() {
@@ -130,7 +130,7 @@ impl GitManager {
         Ok(image_items)
     }
 
-    pub async fn list(&self) -> Result<Vec<ImageItem>> {
+    pub async fn list(&self) -> Up2bResult<Vec<ImageItem>> {
         let resp = self
             .inner
             .get(&self.inner.base_url, self.headers()?)
@@ -156,7 +156,7 @@ impl GitManager {
 
     const DELETE_MESSAGE: &'static str = "up2b: delete the picture that is no longer used";
 
-    pub async fn delete(&self, s: &str) -> Result<DeleteResponse> {
+    pub async fn delete(&self, s: &str) -> Up2bResult<DeleteResponse> {
         // s 为 url 和 sha 合并后的字符串，用"---"分隔
         let v: Vec<&str> = s.splitn(2, "---").collect();
         let url = v[0];
@@ -192,10 +192,10 @@ impl GitManager {
 
     async fn upload(
         &self,
-        window: Option<Window>,
+        window: Option<WebviewWindow>,
         id: u32,
         image_path: &Path,
-    ) -> Result<UploadResult> {
+    ) -> Up2bResult<UploadResult> {
         let filename = match image_path.file_name() {
             Some(n) => n.to_os_string().into_string().unwrap(),
             None => return Err(PathError::NotFile.into()),
@@ -250,16 +250,16 @@ impl GitManager {
 }
 
 trait ValueGetter {
-    fn get_string(&self, key: &str) -> Result<String>;
+    fn get_string(&self, key: &str) -> Up2bResult<String>;
     // fn get_array(&self, key: &str) -> Result<Vec<Value>>;
 }
 
 impl ValueGetter for Value {
-    fn get_string(&self, key: &str) -> Result<String> {
+    fn get_string(&self, key: &str) -> Up2bResult<String> {
         match &self[key] {
             Value::String(s) => Ok(s.to_owned()),
-            Value::Null => return Err(Error::KeyNotFound(key.to_owned())),
-            _ => return Err(Error::KeyNotMatch(key.to_owned())),
+            Value::Null => return Err(Up2bError::KeyNotFound(key.to_owned())),
+            _ => return Err(Up2bError::KeyNotMatch(key.to_owned())),
         }
     }
 
@@ -282,16 +282,16 @@ impl<'r> Manage for GitManager {
         true
     }
 
-    async fn verify(&self) -> Result<Option<Extra>> {
+    async fn verify(&self) -> Up2bResult<Option<Extra>> {
         // TODO: 验证以后再实现
         Ok(None)
     }
 
-    async fn get_all_images(&self) -> Result<Vec<ImageItem>> {
+    async fn get_all_images(&self) -> Up2bResult<Vec<ImageItem>> {
         self.list().await
     }
 
-    async fn delete_image(&self, id: &str) -> Result<DeleteResponse> {
+    async fn delete_image(&self, id: &str) -> Up2bResult<DeleteResponse> {
         match self.delete(id).await {
             Ok(r) => Ok(r),
             Err(e) => Ok(DeleteResponse {
@@ -303,7 +303,7 @@ impl<'r> Manage for GitManager {
 
     async fn upload_image(
         &self,
-        window: Option<Window>,
+        window: Option<WebviewWindow>,
         id: u32,
         image_path: &Path,
     ) -> UploadResult {

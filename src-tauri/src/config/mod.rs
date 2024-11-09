@@ -5,7 +5,7 @@ use std::fs;
 use std::path::PathBuf;
 use tokio::sync::RwLock;
 
-use crate::error::Result;
+use crate::error::Up2bResult;
 use crate::manager::api::Api;
 use crate::manager::smms::SMMS_API;
 use crate::ManagerCode;
@@ -168,7 +168,7 @@ impl Config {
     // }
 }
 
-fn read_config() -> Result<Option<Config>> {
+fn read_config() -> Up2bResult<Option<Config>> {
     if !CONFIG_FILE.exists() {
         return Ok(None);
     }
@@ -191,7 +191,7 @@ fn read_config() -> Result<Option<Config>> {
     Ok(Some(config))
 }
 
-pub fn write_config(config: &Config) -> Result<()> {
+pub fn write_config(config: &Config) -> Up2bResult<()> {
     trace!("write a new config");
 
     let config_str = toml::to_string(config)?;

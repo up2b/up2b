@@ -25,7 +25,7 @@ use simplelog::WriteLogger;
 #[cfg(debug_assertions)]
 use simplelog::{ColorChoice, TermLogger, TerminalMode};
 use std::path::PathBuf;
-use tauri::Window;
+use tauri::WebviewWindow;
 
 use crate::config::{write_config, Config, ManagerAuthConfigKind, APP_CONFIG_DIR, CONFIG};
 use crate::logger::{log_level, logger_config};
@@ -34,12 +34,12 @@ use crate::manager::{
     MANAGERS,
 };
 
-pub use crate::error::{ConfigError, Error, Result};
+pub use crate::error::{ConfigError, Up2bError, Up2bResult};
 use crate::manager::ManagerCode;
 
-async fn using_manager() -> Result<Box<dyn Manage>> {
+async fn using_manager() -> Up2bResult<Box<dyn Manage>> {
     let config = match CONFIG.read().await.as_ref() {
-        None => return Err(Error::Config(ConfigError::NotFound)),
+        None => return Err(Up2bError::Config(ConfigError::NotFound)),
         Some(c) => c.clone(),
     };
 
@@ -50,7 +50,7 @@ async fn using_manager() -> Result<Box<dyn Manage>> {
         return use_manager(&using, c);
     }
 
-    Err(Error::AuthConfig(AuthConfigError::Null(using.clone())))
+    Err(Up2bError::AuthConfig(AuthConfigError::Null(using.clone())))
 }
 
 #[tauri::command]
@@ -73,7 +73,7 @@ async fn get_managers() -> Vec<ManagerItem> {
 }
 
 #[tauri::command]
-async fn get_all_images() -> Result<Vec<ImageItem>> {
+async fn get_all_images() -> Up2bResult<Vec<ImageItem>> {
     trace!("获取图片列表");
 
     let uploader = using_manager().await?;
@@ -82,7 +82,7 @@ async fn get_all_images() -> Result<Vec<ImageItem>> {
 }
 
 #[tauri::command]
-async fn delete_image(delete_id: String) -> Result<DeleteResponse> {
+async fn delete_image(delete_id: String) -> Up2bResult<DeleteResponse> {
     trace!("删除图片：{}", delete_id);
     let uploader = using_manager().await?;
 
@@ -90,7 +90,7 @@ async fn delete_image(delete_id: String) -> Result<DeleteResponse> {
 }
 
 #[tauri::command]
-async fn upload_image(window: Window, image_path: PathBuf) -> Result<UploadResult> {
+async fn upload_image(window: WebviewWindow, image_path: PathBuf) -> Up2bResult<UploadResult> {
     trace!("上传图片 {image_path:?}");
 
     let uploader = using_manager().await?;
@@ -99,7 +99,10 @@ async fn upload_image(window: Window, image_path: PathBuf) -> Result<UploadResul
 }
 
 #[tauri::command]
-async fn verify(image_bed: ManagerCode, config: ManagerAuthConfigKind) -> Result<Option<Extra>> {
+async fn verify(
+    image_bed: ManagerCode,
+    config: ManagerAuthConfigKind,
+) -> Up2bResult<Option<Extra>> {
     let uploader = use_manager(&image_bed, &config)?;
 
     uploader.verify().await
@@ -119,7 +122,7 @@ async fn smms_config() -> Api {
 }
 
 #[tauri::command]
-async fn update_config(config: Config) -> Result<()> {
+async fn update_config(config: Config) -> Up2bResult<()> {
     write_config(&config)?;
 
     let mut c = CONFIG.write().await;
@@ -134,14 +137,14 @@ fn compress_state() -> bool {
 }
 
 #[tauri::command]
-async fn support_stream() -> Result<bool> {
+async fn support_stream() -> Up2bResult<bool> {
     let uploader = using_manager().await?;
 
     Ok(uploader.support_stream())
 }
 
 #[tauri::command]
-async fn allowed_formats() -> Result<Vec<AllowedImageFormat>> {
+async fn allowed_formats() -> Up2bResult<Vec<AllowedImageFormat>> {
     let uploader = using_manager().await?;
 
     Ok(uploader.allowed_formats())
@@ -155,7 +158,7 @@ async fn get_using_image_bed() -> ManagerCode {
 }
 
 #[tauri::command]
-async fn toggle_manager(manager_code: ManagerCode) -> Result<()> {
+async fn toggle_manager(manager_code: ManagerCode) -> Up2bResult<()> {
     let mut write_guard = CONFIG.write().await;
 
     if let Some(mut config) = write_guard.take() {
@@ -191,14 +194,14 @@ async fn check_new_manager_code(manager_code: ManagerCode) -> bool {
 async fn new_custom_manager(
     manager_code: ManagerCode,
     auth_config: ManagerAuthConfigKind,
-) -> Result<()> {
+) -> Up2bResult<()> {
     let mut conf = CONFIG.write().await;
 
     let mut config = match conf.take() {
         Some(c) => {
             let auth_configs = c.auth_config().clone();
             if auth_configs.contains_key(&manager_code) {
-                return Err(Error::CustomUnique(manager_code));
+                return Err(Up2bError::CustomUnique(manager_code));
             }
             c
         }
@@ -246,10 +249,15 @@ async fn main() {
         }
     }
 
-    let builder = tauri::Builder::default().setup(|app| match setup::setup(&app) {
-        Err(_) => Ok(app.handle().exit(1)),
-        _ => Ok(()),
-    });
+    let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_cli::init())
+        .setup(|app| match setup::setup(&app) {
+            Err(_) => Ok(app.handle().exit(1)),
+            _ => Ok(()),
+        });
 
     builder
         .invoke_handler(tauri::generate_handler![

@@ -6,7 +6,7 @@ import {
   DeleteOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
-import { writeText } from '@tauri-apps/api/clipboard'
+import { writeText } from '@tauri-apps/plugin-clipboard-manager'
 import type { MessageInstance } from 'antd/es/message/interface'
 import { deleteImage } from '~/lib'
 import './index.scss'

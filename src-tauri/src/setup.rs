@@ -1,18 +1,16 @@
 use std::{collections::HashMap, path::Path};
 
-use tauri::{
-    api::cli::{ArgData, Matches, SubcommandMatches},
-    App, Result, WindowBuilder, WindowUrl,
-};
+use tauri::{App, Result, WebviewUrl, WebviewWindowBuilder};
+use tauri_plugin_cli::{ArgData, CliExt, Matches, SubcommandMatches};
 
 use crate::{manager::UploadResult, using_manager};
 
 fn new_window(app: &App) {
-    let builder = WindowBuilder::new(
+    let builder = WebviewWindowBuilder::new(
         app,
         "main",
         #[cfg(debug_assertions)]
-        WindowUrl::External("http://localhost:1420".parse().unwrap()),
+        WebviewUrl::External("http://localhost:1420".parse().unwrap()),
         #[cfg(not(debug_assertions))]
         WindowUrl::App("../dist".into()),
     )
@@ -29,15 +27,7 @@ fn new_window(app: &App) {
             .unwrap();
     }
 
-    #[cfg(target_os = "windows")]
-    {
-        use window_shadows::set_shadow;
-
-        let window = builder.transparent(true).build().unwrap();
-        set_shadow(&window, true).unwrap();
-    }
-
-    #[cfg(target_os = "linux")]
+    #[cfg(not(target_os = "macos"))]
     builder.build().unwrap();
 }
 
@@ -102,15 +92,18 @@ fn parse_cli_matches(matches: Matches) -> RunningMode {
 }
 
 pub(crate) fn setup(app: &App) -> Result<()> {
-    match app.get_cli_matches() {
-        Ok(matches) => match parse_cli_matches(matches) {
-            RunningMode::Cli => app.handle().exit(0), // 不退出的话会一直阻塞在主线程循环里
-            RunningMode::Windows => new_window(app),
-        },
-        Err(e) => {
+    let matches = app
+        .cli()
+        .matches()
+        .map_err(|e| {
             error!("{}", e);
-            return Err(e);
-        }
+            e
+        })
+        .unwrap();
+
+    match parse_cli_matches(matches) {
+        RunningMode::Cli => app.handle().exit(0), // 不退出的话会一直阻塞在主线程循环里
+        RunningMode::Windows => new_window(app),
     }
 
     Ok(())

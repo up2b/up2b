@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { appWindow } from '@tauri-apps/api/window'
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { TauriEvent, UnlistenFn } from '@tauri-apps/api/event'
 import { message, Progress, Flex, Spin } from 'antd'
 import { CloudUploadOutlined, PlusOutlined } from '@ant-design/icons'
@@ -15,6 +15,7 @@ import {
 import { suspense } from '~/advance'
 import { LazyUploadResult } from '~/lazy'
 import './index.scss'
+const appWindow = getCurrentWebviewWindow()
 
 interface Image {
   path: string

@@ -11,10 +11,10 @@ use reqwest::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use tauri::Window;
+use tauri::WebviewWindow;
 
 use crate::{
-    error::HeaderError, http::multipart::FileKind, manager::RequestWithBodyMethod, Result,
+    error::HeaderError, http::multipart::FileKind, manager::RequestWithBodyMethod, Up2bResult,
 };
 
 pub(crate) use self::delete::Delete;
@@ -114,7 +114,7 @@ impl BaseApiManager {
         &self.inner.allowed_formats
     }
 
-    fn headers(&self) -> Result<HeaderMap> {
+    fn headers(&self) -> Up2bResult<HeaderMap> {
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, "application/json".parse().unwrap());
 
@@ -133,7 +133,7 @@ impl BaseApiManager {
         Ok(headers)
     }
 
-    pub async fn list(&self) -> Result<Vec<ImageItem>> {
+    pub async fn list(&self) -> Up2bResult<Vec<ImageItem>> {
         let response = match &self.api.list.method {
             ListRequestMethod::Get => {
                 self.inner
@@ -159,7 +159,7 @@ impl BaseApiManager {
         self.api.list.controller.parse(response).await
     }
 
-    async fn delete_by_delete(&self, kind: &DeleteKeyKind, id: &str) -> Result<Response> {
+    async fn delete_by_delete(&self, kind: &DeleteKeyKind, id: &str) -> Up2bResult<Response> {
         // DELETE 删除认证方式只能是 headers
         let url = match kind {
             DeleteKeyKind::Path => self.inner.url(&(self.api.delete.path.to_owned() + id)),
@@ -172,7 +172,7 @@ impl BaseApiManager {
         self.inner.delete(&url, self.headers()?).await
     }
 
-    async fn delete_by_get(&self, kind: &DeleteKeyKind, id: &str) -> Result<Response> {
+    async fn delete_by_get(&self, kind: &DeleteKeyKind, id: &str) -> Up2bResult<Response> {
         // GET 删除认证方式只能是 headers
         let url = match kind {
             DeleteKeyKind::Path => self.inner.url(&(self.api.delete.path.to_owned() + id)),
@@ -190,7 +190,7 @@ impl BaseApiManager {
         body: &Map<String, Value>,
         key: &str,
         id: &str,
-    ) -> Result<Response> {
+    ) -> Up2bResult<Response> {
         let mut body = body.clone();
 
         body.insert(key.to_owned(), Value::String(id.to_owned()));
@@ -209,7 +209,7 @@ impl BaseApiManager {
             .await
     }
 
-    pub async fn delete(&self, id: &str) -> Result<()> {
+    pub async fn delete(&self, id: &str) -> Up2bResult<()> {
         let resp = match &self.api.delete.method {
             DeleteMethod::Get { kind } => self.delete_by_get(kind, id).await?,
             DeleteMethod::Delete { kind } => self.delete_by_delete(kind, id).await?,
@@ -221,11 +221,11 @@ impl BaseApiManager {
 
     pub async fn upload(
         &self,
-        window: Option<Window>,
+        window: Option<WebviewWindow>,
         id: u32,
         image_path: &Path,
         form: Option<&[(&str, &str)]>,
-    ) -> Result<UploadResult> {
+    ) -> Up2bResult<UploadResult> {
         let headers = self.headers()?;
 
         debug!("超时时间：{}", self.api.upload.timeout);
@@ -288,16 +288,16 @@ impl Manage for BaseApiManager {
         }
     }
 
-    async fn verify(&self) -> Result<Option<Extra>> {
+    async fn verify(&self) -> Up2bResult<Option<Extra>> {
         // TODO: api 类型的图床的 token 验证以后再实现
         Ok(None)
     }
 
-    async fn get_all_images(&self) -> Result<Vec<ImageItem>> {
+    async fn get_all_images(&self) -> Up2bResult<Vec<ImageItem>> {
         self.list().await
     }
 
-    async fn delete_image(&self, id: &str) -> Result<DeleteResponse> {
+    async fn delete_image(&self, id: &str) -> Up2bResult<DeleteResponse> {
         match self.delete(id).await {
             Ok(()) => Ok(DeleteResponse {
                 success: true,
@@ -312,7 +312,7 @@ impl Manage for BaseApiManager {
 
     async fn upload_image(
         &self,
-        window: Option<Window>,
+        window: Option<WebviewWindow>,
         id: u32,
         image_path: &Path,
     ) -> UploadResult {

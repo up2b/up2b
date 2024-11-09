@@ -1,43 +1,39 @@
 {
-  "name": "up2b",
-  "private": true,
-  "version": "0.3.0-alpha.5",
-  "scripts": {
-    "dev:vite": "vite",
-    "build:vite": "tsc && vite build",
-    "build": "tauri build",
-    "preview": "vite preview",
-    "tauri": "tauri",
-    "start:dev": "cross-env RUST_BACKTRACE=1 LOG_LEVEL=4 tauri dev",
-    "trace": "cross-env RUST_BACKTRACE=1 LOG_LEVEL=5 tauri dev",
-    "dev": "pnpm start:dev"
-  },
-  "type": "module",
-  "dependencies": {
-    "@ant-design/icons": "^5.3.4",
-    "@tauri-apps/api": "^1.5.3",
-    "antd": "^5.15.3",
-    "cross-env": "^7.0.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^1.5.11",
-    "@types/node": "^20.11.30",
-    "@types/react": "^18.2.67",
-    "@types/react-dom": "^18.2.22",
-    "@typescript-eslint/eslint-plugin": "^7.3.1",
-    "@typescript-eslint/parser": "^7.3.1",
-    "@vitejs/plugin-react": "^4.2.1",
-    "eslint": "^8.57.0",
-    "eslint-config-standard-with-typescript": "^43.0.1",
-    "eslint-plugin-n": "^16.6.2",
-    "eslint-plugin-promise": "^6.1.1",
-    "eslint-plugin-react": "^7.34.1",
-    "sass": "^1.72.0",
-    "stylelint": "^16.2.1",
-    "stylelint-scss": "^6.2.1",
-    "typescript": "^5.4.2",
-    "vite": "^5.1.6"
-  }
+	"name": "up2b",
+	"private": true,
+	"version": "0.3.0-alpha.5",
+	"scripts": {
+		"start": "vite",
+		"build:vite": "vite build",
+		"build": "tauri build",
+		"serve": "vite preview",
+		"tauri": "tauri",
+		"start:dev": "cross-env RUST_BACKTRACE=1 tauri dev",
+		"check": "biome check --write src",
+		"dev": "bun run start:dev"
+	},
+	"type": "module",
+	"dependencies": {
+		"@ant-design/icons": "^5.5.1",
+		"@tauri-apps/api": "^2.0.3",
+		"@tauri-apps/plugin-clipboard-manager": "^2.0.0",
+		"@tauri-apps/plugin-shell": "~2",
+		"@tauri-apps/plugin-updater": "~2",
+		"antd": "^5.21.6",
+		"cross-env": "^7.0.3",
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1"
+	},
+	"devDependencies": {
+		"@tauri-apps/cli": "^2.0.4",
+		"@types/node": "^22.9.0",
+		"@types/react": "^18.3.12",
+		"@types/react-dom": "^18.3.1",
+		"@vitejs/plugin-react": "^4.3.3",
+		"sass": "^1.80.6",
+		"stylelint": "^16.10.0",
+		"stylelint-scss": "^6.8.1",
+		"typescript": "^5.6.3",
+		"vite": "^5.4.10"
+	}
 }

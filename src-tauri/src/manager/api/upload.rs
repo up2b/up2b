@@ -7,7 +7,7 @@ use crate::{
     error::UploadError,
     http::multipart::FileKind,
     manager::{AllowedImageFormat, ImageItem},
-    Error, Result,
+    Up2bError, Up2bResult,
 };
 
 #[cfg(feature = "compress")]
@@ -43,11 +43,11 @@ impl UploadResponseErrorController {
         }
     }
 
-    pub fn parse(&self, json: &Value) -> Error {
+    pub fn parse(&self, json: &Value) -> Up2bError {
         let error = json.get_value_by_keys(&self.key);
         let error_message = match error.as_str() {
             Some(s) => s,
-            None => return Error::KeyNotFound(self.key.to_owned()),
+            None => return Up2bError::KeyNotFound(self.key.to_owned()),
         };
 
         // 无 repeat 正则时直接返回错误
@@ -96,16 +96,16 @@ impl UploadResponseSuccuessController {
         }
     }
 
-    fn parse(&self, json: &Value) -> Result<ImageItem> {
+    fn parse(&self, json: &Value) -> Up2bResult<ImageItem> {
         let url = match json.get_value_by_keys(&self.image_url_key) {
             Value::String(s) => s,
-            Value::Null => return Err(Error::Other("没有图片链接".to_owned())),
-            _ => return Err(Error::Other("类型错误".to_owned())),
+            Value::Null => return Err(Up2bError::Other("没有图片链接".to_owned())),
+            _ => return Err(Up2bError::Other("类型错误".to_owned())),
         };
         let deleted_id = match json.get_value_by_keys(&self.deleted_id_key) {
             Value::String(s) => s,
-            Value::Null => return Err(Error::Other("没有删除 id".to_owned())),
-            _ => return Err(Error::Other("类型错误".to_owned())),
+            Value::Null => return Err(Up2bError::Other("没有删除 id".to_owned())),
+            _ => return Err(Up2bError::Other("类型错误".to_owned())),
         };
 
         match &self.thumb_key {
@@ -118,7 +118,7 @@ impl UploadResponseSuccuessController {
                 let thumb = match json.get_value_by_keys(k) {
                     Value::String(s) => Some(s),
                     Value::Null => None,
-                    _ => return Err(Error::Other("类型错误".to_owned())),
+                    _ => return Err(Up2bError::Other("类型错误".to_owned())),
                 };
 
                 Ok(ImageItem {
@@ -166,7 +166,7 @@ impl UploadResponseController {
         }
     }
 
-    pub async fn parse(&self, response: Response) -> Result<ImageItem> {
+    pub async fn parse(&self, response: Response) -> Up2bResult<ImageItem> {
         let json: Value = response.json().await?;
 
         debug!("响应体：{}", json);
